@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <BaseOutputPath>..\..\build\</BaseOutputPath>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <Configurations>debug;release</Configurations>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Striked3D.Core\Striked3D.Core.csproj" />
+    <ProjectReference Include="..\Striked3D.Servers\Striked3D.Servers.csproj" />
+    <ProjectReference Include="..\Striked3D.Tools\Striked3D.Tools.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,25 @@
+{
+    // Change "mono" to "clr" for 64-bit .NET Framework debugging on Windows.
+    // (See: https://github.com/OmniSharp/omnisharp-vscode/wiki/Desktop-.NET-Framework)
+
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/debug/Striked3D.exe",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "preLaunchTask": "Build (Debug)"
+        },
+        {
+            "name": "Attach",
+            "type": "coreclr",
+            "request": "attach",
+            "address": "localhost",
+            "console": "internalConsole",
+            "port": 55555
+        }
+    ]
+}
