@@ -8,7 +8,7 @@
             "name": "Launch",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/build/debug/Striked3D.exe",
+            "program": "${workspaceFolder}/build/debug/Striked3D.Engine.exe",
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "preLaunchTask": "Build (Debug)"

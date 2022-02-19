@@ -1,0 +1,14 @@
+ <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+      <LangVersion>latest</LangVersion>
+      <TargetFramework>netcoreapp3.1</TargetFramework>
+      <BaseOutputPath>..\..\build\</BaseOutputPath>
+      <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+      <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+      <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+      <Configurations>debug;release</Configurations>
+      <PlatformTarget>AnyCPU</PlatformTarget>
+      <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
+      <PublishTrimmed>true</PublishTrimmed>
+    </PropertyGroup>
+</Project>

@@ -1,13 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <BaseOutputPath>..\..\build\</BaseOutputPath>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <Configurations>debug;release</Configurations>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
+  <Import Project="..\common.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\Striked3D.Core\Striked3D.Core.csproj" />
+    <ProjectReference Include="..\Striked3D.Importer\Striked3D.Importer.csproj" />
+    <ProjectReference Include="..\Striked3D.Nodes\Striked3D.Nodes.csproj" />
+    <ProjectReference Include="..\Striked3D.Resources\Striked3D.Resources.csproj" />
+    <ProjectReference Include="..\Striked3D.Services\Striked3D.Services.csproj" />
+  </ItemGroup>
 </Project>

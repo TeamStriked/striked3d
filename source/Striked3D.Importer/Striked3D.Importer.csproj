@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <Import Project="..\common.props" />
+
+  <ItemGroup>
+    <PackageReference Include="AssimpNet" Version="5.0.0-beta1" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\thirtparty\veldrid-spirv\src\Veldrid.SPIRV\Veldrid.SPIRV.csproj" />
+    <ProjectReference Include="..\..\thirtparty\veldrid\Veldrid\Veldrid.csproj" />
+    <ProjectReference Include="..\Striked3D.Resources\Striked3D.Resources.csproj" />
+    <ProjectReference Include="..\Striked3D.Services\Striked3D.Services.csproj" />
+    <ProjectReference Include="..\Striked3D.Types\Striked3D.Types.csproj" />
+  </ItemGroup>
+</Project>

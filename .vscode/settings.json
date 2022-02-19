@@ -1,3 +1,12 @@
 {
     "omnisharp.autoStart": true,
+    "editor.formatOnSave": true,
+    "omnisharp.enableEditorConfigSupport": true,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": true
+    },
+    "files.exclude": {
+        "**/*.js": true,
+        "**/*.map": true
+    }
 }

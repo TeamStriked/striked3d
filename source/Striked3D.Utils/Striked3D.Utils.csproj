@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <Import Project="..\common.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\thirtparty\veldrid\Veldrid\Veldrid.csproj" />
+  </ItemGroup>
+</Project>
