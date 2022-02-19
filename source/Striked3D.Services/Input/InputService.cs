@@ -2,8 +2,6 @@
 using Silk.NET.Maths;
 using Striked3D.Core.Window;
 using Striked3D.Services;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 
@@ -22,46 +20,53 @@ namespace Striked3D.Core.Input
 
         public void Register(IWindow window)
         {
-            this._registry = window.Services;
+            _registry = window.Services;
 
             input = window.CreateInput();
 
             PrimaryMouse = input.Mice.FirstOrDefault();
             PrimaryKeyboard = input.Keyboards.FirstOrDefault();
 
-            PrimaryKeyboard.KeyChar += (s, c) => {
-                 var res = new KeyCharEvent { Char = c };
+            PrimaryKeyboard.KeyChar += (s, c) =>
+            {
+                KeyCharEvent res = new KeyCharEvent { Char = c };
                 ForwardInput(res);
             };
 
-            PrimaryKeyboard.KeyUp += (IKeyboard keyboard, Key key, int some) => {
-                var res = new KeyInputEvent { Key = key, KeyIndex = some, IsUp = true };
+            PrimaryKeyboard.KeyUp += (IKeyboard keyboard, Key key, int some) =>
+            {
+                KeyInputEvent res = new KeyInputEvent { Key = key, KeyIndex = some, IsUp = true };
                 ForwardInput(res);
             };
 
-            PrimaryKeyboard.KeyDown += (IKeyboard keyboard, Key key, int some) => {
-                var res = new KeyInputEvent { Key = key, KeyIndex = some, IsUp = false };
+            PrimaryKeyboard.KeyDown += (IKeyboard keyboard, Key key, int some) =>
+            {
+                KeyInputEvent res = new KeyInputEvent { Key = key, KeyIndex = some, IsUp = false };
                 ForwardInput(res);
             };
 
-            PrimaryMouse.MouseMove += (IMouse mouse, Vector2 pos) => {
-                var res = new MouseInputEvent { Position = new Vector2D<float>(pos.X, pos.Y) };
+            PrimaryMouse.MouseMove += (IMouse mouse, Vector2 pos) =>
+            {
+                MouseInputEvent res = new MouseInputEvent { Position = new Vector2D<float>(pos.X, pos.Y) };
                 ForwardInput(res);
             };
 
-            PrimaryMouse.Scroll += (IMouse mouse, ScrollWheel wheel) => {
-                var res = new MouseInputWheelEvent { Position = new Vector2D<float>(wheel.X, wheel.Y) };
+            PrimaryMouse.Scroll += (IMouse mouse, ScrollWheel wheel) =>
+            {
+                MouseInputWheelEvent res = new MouseInputWheelEvent { Position = new Vector2D<float>(wheel.X, wheel.Y) };
                 ForwardInput(res);
             };
 
-            PrimaryMouse.MouseUp += (IMouse mouse, MouseButton button) => {
-                var res = new MouseButtonEvent { Button = button, IsUp = true };
+            PrimaryMouse.MouseUp += (IMouse mouse, MouseButton button) =>
+            {
+                MouseButtonEvent res = new MouseButtonEvent { Button = button, IsUp = true };
                 ForwardInput(res);
             };
 
-            PrimaryMouse.MouseDown += (IMouse mouse, MouseButton button) => {
+            PrimaryMouse.MouseDown += (IMouse mouse, MouseButton button) =>
+            {
 
-                var res = new MouseButtonEvent { Button = button, IsUp = false };
+                MouseButtonEvent res = new MouseButtonEvent { Button = button, IsUp = false };
                 ForwardInput(res);
             };
         }
@@ -102,9 +107,9 @@ namespace Striked3D.Core.Input
 
         private void ForwardInput(InputEvent ev)
         {
-            var treeService = this._registry.Get<ScreneTreeService>();
+            ScreneTreeService treeService = _registry.Get<ScreneTreeService>();
 
-            foreach (var child in treeService.GetAll<IInputable>())
+            foreach (IInputable child in treeService.GetAll<IInputable>())
             {
                 child.OnInput(ev);
             }

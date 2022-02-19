@@ -1,5 +1,4 @@
 ﻿using Silk.NET.Maths;
-using Striked3D.Core.Graphics;
 using Striked3D.Resources;
 using Veldrid;
 
@@ -23,7 +22,7 @@ namespace Striked3D.Core.Graphics
             ResourceSetDescription resourceSetDescription = new ResourceSetDescription(renderer.Material2DLayout, CanvasBuffer);
             _resourceSet = renderer.CreateResourceSet(resourceSetDescription);
 
-            this.isInit = true;
+            isInit = true;
         }
 
         public override void Dispose()
@@ -36,16 +35,16 @@ namespace Striked3D.Core.Graphics
 
         public override void Update(IRenderer renderer, IViewport viewport)
         {
-            if(!this.isInit)
+            if (!isInit)
             {
-                this.Create(renderer);
+                Create(renderer);
             }
 
-            var sizePos = new Vector4D<float>(viewport.Size.X, viewport.Size.Y, viewport.Position.X, viewport.Position.Y);
+            Vector4D<float> sizePos = new Vector4D<float>(viewport.Size.X, viewport.Size.Y, viewport.Position.X, viewport.Position.Y);
 
             if (prevSize != sizePos)
             {
-                renderer.UpdateBuffer(this.CanvasBuffer, 0, sizePos);
+                renderer.UpdateBuffer(CanvasBuffer, 0, sizePos);
                 prevSize = sizePos;
             }
         }

@@ -2,7 +2,6 @@
 using Msdfgen.IO;
 using Silk.NET.Maths;
 using Striked3D.Core;
-using Striked3D.Core.Graphics;
 using Striked3D.Services;
 using System;
 using System.Collections.Generic;
@@ -38,10 +37,10 @@ namespace Striked3D.Resources
 
     public class Font : Resource
     {
-        public static  int renderSize = 32;
+        public static int renderSize = 32;
         public static float renderRange = 4;
-        public static Font SystemFont = new ("Arial");
-        
+        public static Font SystemFont = new("Arial");
+
         public double ascend;
         public double decend;
 
@@ -53,45 +52,27 @@ namespace Striked3D.Resources
         private Texture fontAtlasTexture;
         private TextureView fontAtlasTextureView;
 
-        public FontAtlas Atlas
-        {
-            get
-            {
-                return atlas;
-            }
-        }
-        public ResourceSet ResourceAtlasSet
-        {
-            get
-            {
-                return fontAtlasSet;
-            }
-        }
+        public FontAtlas Atlas => atlas;
+        public ResourceSet ResourceAtlasSet => fontAtlasSet;
 
-        public double totalHeight
-        {
-            get
-            {
-                return ascend + decend;
-            }
-        }
+        public double totalHeight => ascend + decend;
 
-        private Dictionary<char, FontGylph> cache = new();
+        private readonly Dictionary<char, FontGylph> cache = new();
 
         public Font(string fontname)
         {
             FilePath = GetFilesForFont(fontname);
 
-            if(String.IsNullOrEmpty(FilePath))
+            if (string.IsNullOrEmpty(FilePath))
             {
                 throw new Exception("Cant load font");
             }
 
-            var ft = ImportFont.InitializeFreetype();
-            var fontFace = ImportFont.LoadFont(ft, FilePath);
+            SharpFont.Library ft = ImportFont.InitializeFreetype();
+            SharpFont.Face fontFace = ImportFont.LoadFont(ft, FilePath);
 
-            this.ascend = ImportFont.GetFontAscend(fontFace);
-            this.decend = ImportFont.GetFontDecend(fontFace);
+            ascend = ImportFont.GetFontAscend(fontFace);
+            decend = ImportFont.GetFontDecend(fontFace);
 
 
             fontFace.Dispose();
@@ -107,14 +88,14 @@ namespace Striked3D.Resources
 
             lock (cache)
             {
-                var ft = ImportFont.InitializeFreetype();
-                var fontFace = ImportFont.LoadFont(ft, FilePath);
+                SharpFont.Library ft = ImportFont.InitializeFreetype();
+                SharpFont.Face fontFace = ImportFont.LoadFont(ft, FilePath);
 
-                var generator = Generate.Msdf();
+                Generate.IMsdf generator = Generate.Msdf();
 
                 double advance = 0;
-                var shape = ImportFont.LoadGlyph(fontFace, charCode, ref advance);
-                var msdf = new Bitmap<FloatRgb>(renderSize, renderSize);
+                Shape shape = ImportFont.LoadGlyph(fontFace, charCode, ref advance);
+                Bitmap<FloatRgb> msdf = new Bitmap<FloatRgb>(renderSize, renderSize);
 
                 generator.Output = msdf;
                 generator.Range = renderRange;
@@ -128,7 +109,7 @@ namespace Striked3D.Resources
                 generator.Shape = shape;
                 generator.Compute();
 
-                var record = new FontGylph { advance = advance, bitmap = msdf, Order = this.cache.Values.Count };
+                FontGylph record = new FontGylph { advance = advance, bitmap = msdf, Order = cache.Values.Count };
                 cache.Add(charCode, record);
                 isDirty = true;
 
@@ -137,12 +118,14 @@ namespace Striked3D.Resources
             }
         }
 
-        bool isDirty = false;
+        private bool isDirty = false;
 
         public FontGylph GetGlyph(char c)
         {
-            if(this.cache.ContainsKey(c))
-                return this.cache[c];
+            if (cache.ContainsKey(c))
+            {
+                return cache[c];
+            }
             else
             {
                 return default;
@@ -151,23 +134,23 @@ namespace Striked3D.Resources
 
         public void AddChars(string searchString)
         {
-            foreach(var c in searchString)
+            foreach (char c in searchString)
             {
-                this.AddChar(c);
+                AddChar(c);
             }
 
-            if(isDirty == true)
+            if (isDirty == true)
             {
-                this.GenerateAtlas();
+                GenerateAtlas();
             }
         }
 
         public void Bind(GraphicService device)
         {
-            if(this.isDirty == true)
+            if (isDirty == true)
             {
-                this.CreateTexture(device);
-                this.isDirty = false;
+                CreateTexture(device);
+                isDirty = false;
             }
         }
 
@@ -177,19 +160,21 @@ namespace Striked3D.Resources
 
             fontAtlasTexture?.Dispose();
             fontAtlasTextureView?.Dispose();
-            this.fontAtlasSet?.Dispose();
+            fontAtlasSet?.Dispose();
 
-            this.fontAtlasTexture = null;
-            this.fontAtlasTextureView = null;
-            this.fontAtlasSet = null;
+            fontAtlasTexture = null;
+            fontAtlasTextureView = null;
+            fontAtlasSet = null;
         }
 
         private void CreateTexture(GraphicService device)
         {
-            this.Dispose();
+            Dispose();
 
             if (atlas.bitmap == null)
+            {
                 return;
+            }
 
             //buffers
             fontAtlasTexture = device.Renderer3D.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
@@ -202,16 +187,16 @@ namespace Striked3D.Resources
 
             fontAtlasTextureView = device.Renderer3D.ResourceFactory.CreateTextureView(fontAtlasTexture);
 
-            ResourceSetDescription resourceSetDescription = new (device.FontAtlasLayout, fontAtlasTextureView, device.Renderer3D.LinearSampler);
+            ResourceSetDescription resourceSetDescription = new(device.FontAtlasLayout, fontAtlasTextureView, device.Renderer3D.LinearSampler);
             fontAtlasSet = device.Renderer3D.ResourceFactory.CreateResourceSet(resourceSetDescription);
 
-            var buffer = new byte[atlas.bitmap.Width * atlas.bitmap.Height * 4];
+            byte[] buffer = new byte[atlas.bitmap.Width * atlas.bitmap.Height * 4];
             ulong buferId = 0;
-            for (var y = 0; y < atlas.bitmap.Height; y++)
+            for (int y = 0; y < atlas.bitmap.Height; y++)
             {
-                for (var x = 0; x < atlas.bitmap.Width; x++)
+                for (int x = 0; x < atlas.bitmap.Width; x++)
                 {
-                    var rgb = atlas.bitmap[x, y];
+                    FloatRgb rgb = atlas.bitmap[x, y];
 
                     buffer[buferId++] = (byte)MathExtension.Clamp(rgb.R * 0x100, 0, 0xff);
                     buffer[buferId++] = (byte)MathExtension.Clamp(rgb.G * 0x100, 0, 0xff);
@@ -225,7 +210,7 @@ namespace Striked3D.Resources
                 fixed (byte* texDataPtr = &buffer[0])
                 {
                     device.Renderer3D.UpdateTexture(
-                                          this.fontAtlasTexture, (IntPtr)texDataPtr, (uint)buffer.Length,
+                                          fontAtlasTexture, (IntPtr)texDataPtr, (uint)buffer.Length,
                                           0, 0, 0, (uint)atlas.bitmap.Width, (uint)atlas.bitmap.Height, 1,
                                           0, 0);
                 }
@@ -234,35 +219,35 @@ namespace Striked3D.Resources
 
         private void GenerateAtlas()
         {
-            var maxPossibleColumns = (int) MathF.Ceiling(2048 / renderSize);
-            var totalColumns = (this.cache.Count > maxPossibleColumns) ? maxPossibleColumns : this.cache.Count;
-            var totalRows = Math.Max(1, (int)MathF.Floor((float)this.cache.Count / maxPossibleColumns));
+            int maxPossibleColumns = (int)MathF.Ceiling(2048 / renderSize);
+            int totalColumns = (cache.Count > maxPossibleColumns) ? maxPossibleColumns : cache.Count;
+            int totalRows = Math.Max(1, (int)MathF.Floor((float)cache.Count / maxPossibleColumns));
 
-            var width = (int)totalColumns * renderSize;
-            var height = (int)totalRows * renderSize;
+            int width = totalColumns * renderSize;
+            int height = totalRows * renderSize;
 
-            var atlasBitmap = new Bitmap<FloatRgb>(width, height);
-            var currentRow = 0;
-            var currentColumn = 0;
-            var cacheLookup = new Dictionary<char, FontAtlasGylph>();
-          
-            foreach (var gylph in cache.OrderBy(df => df.Value.Order).ToArray())
+            Bitmap<FloatRgb> atlasBitmap = new Bitmap<FloatRgb>(width, height);
+            int currentRow = 0;
+            int currentColumn = 0;
+            Dictionary<char, FontAtlasGylph> cacheLookup = new Dictionary<char, FontAtlasGylph>();
+
+            foreach (KeyValuePair<char, FontGylph> gylph in cache.OrderBy(df => df.Value.Order).ToArray())
             {
-                var regionStartX = currentColumn * renderSize;
-                var regionStartY = currentRow * renderSize;
+                int regionStartX = currentColumn * renderSize;
+                int regionStartY = currentRow * renderSize;
 
-                var regionStartXEnd = currentColumn * renderSize + renderSize;
+                int regionStartXEnd = currentColumn * renderSize + renderSize;
 
-                for (var y = 0; y < gylph.Value.bitmap.Height; y++)
+                for (int y = 0; y < gylph.Value.bitmap.Height; y++)
                 {
-                    for (var x = 0; x < gylph.Value.bitmap.Width; x++)
+                    for (int x = 0; x < gylph.Value.bitmap.Width; x++)
                     {
                         atlasBitmap[x + regionStartX, y + regionStartY] = gylph.Value.bitmap[x, y];
                     }
                 }
 
                 cacheLookup.Add(gylph.Key, new FontAtlasGylph { region = new Vector2D<float>(regionStartX, regionStartY), advance = gylph.Value.advance });
-                    
+
                 if (currentColumn == maxPossibleColumns)
                 {
                     currentRow++;
@@ -273,7 +258,7 @@ namespace Striked3D.Resources
                     currentColumn++;
                 }
             }
-       
+
 
             atlas = new FontAtlas
             {
@@ -286,13 +271,13 @@ namespace Striked3D.Resources
         {
             Environment.SpecialFolder specialFolder = Environment.SpecialFolder.Fonts;
             string path = Environment.GetFolderPath(specialFolder);
-            DirectoryInfo directoryInfo = new (path);
+            DirectoryInfo directoryInfo = new(path);
             FileInfo[] fontFiles = directoryInfo.GetFiles("*.ttf");
 
-            foreach (var fontFile in fontFiles)
+            foreach (FileInfo fontFile in fontFiles)
             {
-                var fileWithoutExt = fontFile.Name.Replace(fontFile.Extension, "");
-                if(fileWithoutExt.ToLower() == fontName.ToLower())
+                string fileWithoutExt = fontFile.Name.Replace(fontFile.Extension, "");
+                if (fileWithoutExt.ToLower() == fontName.ToLower())
                 {
                     return fontFile.FullName;
                 }

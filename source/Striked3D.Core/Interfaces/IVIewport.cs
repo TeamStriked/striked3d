@@ -1,7 +1,4 @@
 ﻿using Silk.NET.Maths;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Striked3D.Core
 {
@@ -17,7 +14,7 @@ namespace Striked3D.Core
         public ICamera ActiveCamera { get; set; }
 
         public IWorld World3D { get; }
-        public IWorld World2D { get;  }
+        public IWorld World2D { get; }
 
         public bool IsMouseInside();
     }

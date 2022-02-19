@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Veldrid;
+﻿using Veldrid;
 
 namespace Striked3D.Core
 {
-    public interface  IRenderer
+    public interface IRenderer
     {
-        public ResourceLayout Material3DLayout { get;  }
-        public ResourceLayout Material2DLayout { get;  }
+        public ResourceLayout Material3DLayout { get; }
+        public ResourceLayout Material2DLayout { get; }
         public ResourceLayout TransformLayout { get; }
         public ResourceLayout FontAtlasLayout { get; }
         public DeviceBuffer indexDefaultBuffer { get; }

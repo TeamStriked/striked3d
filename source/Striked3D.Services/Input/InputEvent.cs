@@ -1,8 +1,5 @@
 ﻿using Silk.NET.Input;
 using Silk.NET.Maths;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Striked3D.Core.Input
 {
@@ -23,7 +20,7 @@ namespace Striked3D.Core.Input
     {
         public char Char { get; set; }
     }
-    
+
     public class MouseInputEvent : InputEvent
     {
         public Vector2D<float> Position { get; set; }

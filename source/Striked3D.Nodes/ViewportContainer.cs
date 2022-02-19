@@ -1,13 +1,4 @@
-﻿using Silk.NET.Maths;
-using Striked3D.Core;
-using Striked3D.Core.Graphics;
-using Striked3D.Types;
-using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
-using Veldrid;
+﻿using Striked3D.Core;
 
 namespace Striked3D.Nodes
 {
@@ -16,12 +7,12 @@ namespace Striked3D.Nodes
     {
         public override void OnDraw2D(IRenderer renderer)
         {
-             base.OnDraw2D(renderer);
+            base.OnDraw2D(renderer);
         }
 
         public override void BeforeDraw(IRenderer renderer)
         {
-             base.BeforeDraw(renderer);
+            base.BeforeDraw(renderer);
         }
         public override void DrawCanvas()
         {
@@ -31,26 +22,26 @@ namespace Striked3D.Nodes
         {
             base.UpdateSize();
 
-            if (this.Root != null)
+            if (Root != null)
             {
-                this.AdjustChilds();
+                AdjustChilds();
             }
         }
 
         private void AdjustChilds()
         {
-            foreach (var child in this.GetChilds<Viewport>())
+            foreach (Viewport child in GetChilds<Viewport>())
             {
-                if (this.ScreenPosition != child.Position)
+                if (ScreenPosition != child.Position)
                 {
-                    child.Position = this.ScreenPosition;
+                    child.Position = ScreenPosition;
                 }
 
-                if (this.ScreenSize != child.Size)
+                if (ScreenSize != child.Size)
                 {
-                    child.Size = this.ScreenSize;
+                    child.Size = ScreenSize;
 
-                    foreach (var subChilds in child.GetChilds<Control>())
+                    foreach (Control subChilds in child.GetChilds<Control>())
                     {
                         subChilds.UpdateSizes();
                     }

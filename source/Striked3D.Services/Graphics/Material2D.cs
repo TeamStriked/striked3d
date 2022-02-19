@@ -1,14 +1,6 @@
 ﻿using Striked3D.Core;
-using Striked3D.Core.Graphics;
-using Striked3D.Core.Pipeline;
 using Striked3D.Engine.Resources;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using Veldrid;
-using Veldrid.SPIRV;
-using PipelineVeldrid = Veldrid.Pipeline;
 
 namespace Striked3D.Resources
 {
@@ -16,14 +8,14 @@ namespace Striked3D.Resources
     {
         public Material2D() : base()
         {
-            this.cullMode = FaceCullMode.None;
-            this.frontFace = FrontFace.Clockwise;
-            this.mode = PrimitiveTopology.TriangleList;
-            this.blendState = BlendStateDescription.SingleAlphaBlend;
-            this.writeEnable = false;
-            this.testEnabled = false;
-            this.depthClip = true;
-            this.constantSize = Material2DInfo.GetSizeInBytes();
+            cullMode = FaceCullMode.None;
+            frontFace = FrontFace.Clockwise;
+            mode = PrimitiveTopology.TriangleList;
+            blendState = BlendStateDescription.SingleAlphaBlend;
+            writeEnable = false;
+            testEnabled = false;
+            depthClip = true;
+            constantSize = Material2DInfo.GetSizeInBytes();
         }
 
         public string _VertexCode = @"
@@ -124,21 +116,21 @@ void main()
     }";
 
         public override string VertexCode => _VertexCode;
-        public override string FragmentCode => _FragmentCode; 
+        public override string FragmentCode => _FragmentCode;
 
         public override void BeforeDraw(IRenderer renderer)
         {
-            if (this._isDirty)
+            if (_isDirty)
             {
-                              //   builder.SetVertexLayout(new VertexLayoutDescription[] { Vertex2D.GetLayout() });
-                builder.SetResourceLayouts(new ResourceLayout[] {  
+                //   builder.SetVertexLayout(new VertexLayoutDescription[] { Vertex2D.GetLayout() });
+                builder.SetResourceLayouts(new ResourceLayout[] {
                     renderer.Material2DLayout,
                     renderer.FontAtlasLayout });
 
                 builder.Generate(renderer, this);
 
-                this._isDirty = false;
-               
+                _isDirty = false;
+
             }
         }
         public override void Dispose()

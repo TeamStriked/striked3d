@@ -1,9 +1,6 @@
 ﻿using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Striked3D.Core.Window
 {

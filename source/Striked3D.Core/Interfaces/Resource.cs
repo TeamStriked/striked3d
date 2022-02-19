@@ -1,8 +1,4 @@
 ﻿using Striked3D.Core.Reference;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Veldrid;
 
 namespace Striked3D.Core
 {
@@ -12,6 +8,6 @@ namespace Striked3D.Core
         {
             base.Dispose();
         }
-  
+
     }
 }

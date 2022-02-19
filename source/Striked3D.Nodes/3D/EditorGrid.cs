@@ -1,20 +1,14 @@
 ﻿using Striked3D.Core;
-using Striked3D.Core.Graphics;
-using Striked3D.Core.Pipeline;
 using Striked3D.Resources;
 using Striked3D.Types;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using Veldrid;
 
 namespace Striked3D.Nodes
 {
     public class EditorGrid : VisualInstance3D
     {
-        public GridMaterial3D Material = new ();
-        
+        public GridMaterial3D Material = new();
+
         private DeviceBuffer deviceBufferVertex;
         private readonly Vertex[] vertices;
 
@@ -28,20 +22,20 @@ namespace Striked3D.Nodes
             vertices[4] = new Vertex { Position = new Silk.NET.Maths.Vector3D<float>(1, 1, 0) };
             vertices[5] = new Vertex { Position = new Silk.NET.Maths.Vector3D<float>(1, -1, 0) };
 
-            this._isDirty = true;
+            _isDirty = true;
         }
 
         public override void BeforeDraw(IRenderer renderer)
         {
-            if (Viewport != null && Viewport.World3D != null && this.Transform != null)
+            if (Viewport != null && Viewport.World3D != null && Transform != null)
             {
-                if (this._isDirty)
+                if (_isDirty)
                 {
-                    this.Transform.BeforeDraw(renderer);
-                    this.Material?.BeforeDraw(renderer);
+                    Transform.BeforeDraw(renderer);
+                    Material?.BeforeDraw(renderer);
 
                     uint size = (uint)vertices.Length * Vertex.GetSizeInBytes();
-                    var vbDescription = new BufferDescription
+                    BufferDescription vbDescription = new BufferDescription
                     (
                         size,
                         BufferUsage.VertexBuffer
@@ -50,7 +44,7 @@ namespace Striked3D.Nodes
                     deviceBufferVertex = renderer.CreateBuffer(vbDescription);
                     renderer.UpdateBuffer(deviceBufferVertex, 0, vertices);
 
-                    this._isDirty = false;
+                    _isDirty = false;
                 }
             }
         }
@@ -59,14 +53,14 @@ namespace Striked3D.Nodes
         {
             if (Material != null && !Material.isDirty)
             {
-                this.Transform?.OnDraw3D(renderer);
+                Transform?.OnDraw3D(renderer);
 
                 renderer.SetViewport(Viewport);
                 renderer.SetMaterial(Material);
                 renderer.SetResourceSets(new ResourceSet[] { Viewport.World3D.ResourceSet });
                 renderer.BindBuffers(deviceBufferVertex);
 
-                renderer.DrawInstanced(this.vertices.Length);
+                renderer.DrawInstanced(vertices.Length);
             }
         }
     }

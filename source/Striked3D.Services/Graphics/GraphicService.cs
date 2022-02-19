@@ -1,23 +1,23 @@
-﻿using Striked3D.Core.Window;
+﻿using Silk.NET.Maths;
+using Silk.NET.Vulkan;
+using Striked3D.Core;
+using Striked3D.Core.AssetsPrimitives;
+using Striked3D.Core.Window;
+using Striked3D.Graphics;
+using Striked3D.Resources;
 using Striked3D.Utils;
 using System;
-using Veldrid;
-using Silk.NET.Vulkan;
-using Silk.NET.Maths;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Threading;
 using System.Collections.Generic;
-using Striked3D.Resources;
-using Striked3D.Core.AssetsPrimitives;
-using Striked3D.Core;
-using Striked3D.Graphics;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Veldrid;
 
 namespace Striked3D.Services
 {
     public class GraphicService : IService
     {
-        private  GraphicsDevice _graphicsDevice;
+        private GraphicsDevice _graphicsDevice;
         private CommandList _commandList;
         private CommandList[] threadsCommands;
         private CommandList[] threadsCommands3D;
@@ -60,14 +60,16 @@ namespace Striked3D.Services
             _graphicsDevice = window.CreateDevice();
             window.OnResize += Window_OnResize;
 
-            this._registry = window.Services;
-            var info = _graphicsDevice.GetVulkanInfo();
+            _registry = window.Services;
+            BackendInfoVulkan info = _graphicsDevice.GetVulkanInfo();
 
-            var api = Vk.GetApi();
-            var device = new PhysicalDevice();
-            device.Handle = info.PhysicalDevice;
+            Vk api = Vk.GetApi();
+            PhysicalDevice device = new PhysicalDevice
+            {
+                Handle = info.PhysicalDevice
+            };
 
-            var features = api.GetPhysicalDeviceFeature(device);
+            PhysicalDeviceFeatures features = api.GetPhysicalDeviceFeature(device);
             CreateResources(window);
         }
 
@@ -78,26 +80,30 @@ namespace Striked3D.Services
 
         public ulong GetImageHandle(Texture texture)
         {
-            var info = _graphicsDevice.GetVulkanInfo();
-            var imageInfo = info.GetVkImage(texture);
+            BackendInfoVulkan info = _graphicsDevice.GetVulkanInfo();
+            ulong imageInfo = info.GetVkImage(texture);
 
             return imageInfo;
         }
 
         public unsafe IntPtr GetProc(string name, IntPtr instanceHandle, IntPtr deviceHandle)
         {
-            var api = Vk.GetApi();
+            Vk api = Vk.GetApi();
             if (deviceHandle != IntPtr.Zero)
             {
-                var device = new Device();
-                device.Handle = deviceHandle;
-                var res = api.GetDeviceProcAddr(device, name);
+                Device device = new Device
+                {
+                    Handle = deviceHandle
+                };
+                Silk.NET.Core.PfnVoidFunction res = api.GetDeviceProcAddr(device, name);
                 return res;
             }
 
-            var instance = new Instance();
-            instance.Handle = instanceHandle;
-            var res2 = api.GetInstanceProcAddr(instance, name);
+            Instance instance = new Instance
+            {
+                Handle = instanceHandle
+            };
+            Silk.NET.Core.PfnVoidFunction res2 = api.GetInstanceProcAddr(instance, name);
 
             return res2;
         }
@@ -107,8 +113,10 @@ namespace Striked3D.Services
 
             frameTimer.AddTime(delta);
 
-            if(this.treeService == null)
-                this.treeService = this._registry.Get<ScreneTreeService>();
+            if (treeService == null)
+            {
+                treeService = _registry.Get<ScreneTreeService>();
+            }
 
 
             //start to free objects
@@ -122,7 +130,7 @@ namespace Striked3D.Services
 
             _graphicsDevice.SubmitCommands(_commandList);
 
-            this.RenderObjects(treeService.GetAll<IDrawable>(), delta);
+            RenderObjects(treeService.GetAll<IDrawable>(), delta);
             _graphicsDevice.SwapBuffers(_graphicsDevice.MainSwapchain);
         }
 
@@ -131,46 +139,46 @@ namespace Striked3D.Services
             if (drawables != null && drawables.Count > 0)
             {
                 int maxRenderablesPerThread = maxRecordPerThread / maxPossibleThreads;
-                var drawables2D = drawables.Where(df => df is IDrawable2D).Select(df => df as IDrawable2D).Chunkify(maxRenderablesPerThread);
-                var drawables3D = drawables.Where(df => df is IDrawable3D).Select(df => df as IDrawable3D).Chunkify(maxRenderablesPerThread);
-                var drawablesPreRender = drawables.Chunkify(maxRenderablesPerThread);
+                IEnumerable<IEnumerable<IDrawable2D>> drawables2D = drawables.Where(df => df is IDrawable2D).Select(df => df as IDrawable2D).Chunkify(maxRenderablesPerThread);
+                IEnumerable<IEnumerable<IDrawable3D>> drawables3D = drawables.Where(df => df is IDrawable3D).Select(df => df as IDrawable3D).Chunkify(maxRenderablesPerThread);
+                IEnumerable<IEnumerable<IDrawable>> drawablesPreRender = drawables.Chunkify(maxRenderablesPerThread);
 
                 Task<CommandList>[] preRenderTask = new Task<CommandList>[drawablesPreRender.Count()];
                 Task<CommandList>[] renderThreadsTask3D = new Task<CommandList>[drawables3D.Count()];
                 Task<CommandList>[] renderThreadsTask2D = new Task<CommandList>[drawables2D.Count()];
 
                 int i = 0;
-                foreach (var batch in drawablesPreRender)
+                foreach (IEnumerable<IDrawable> batch in drawablesPreRender)
                 {
-                    var commandBuffer = preRenderCommands[i];
-                    preRenderTask[i++] = this.InitResources(commandBuffer, batch.ToList(), delta);
+                    CommandList commandBuffer = preRenderCommands[i];
+                    preRenderTask[i++] = InitResources(commandBuffer, batch.ToList(), delta);
                 }
 
                 Task.WaitAll(preRenderTask);
 
                 i = 0;
-                foreach (var batch in drawables2D)
+                foreach (IEnumerable<IDrawable2D> batch in drawables2D)
                 {
-                    var commandBuffer = threadsCommands[i];
-                    renderThreadsTask2D[i++] = this.RenderObjects2D(commandBuffer, batch.ToList(), delta);
+                    CommandList commandBuffer = threadsCommands[i];
+                    renderThreadsTask2D[i++] = RenderObjects2D(commandBuffer, batch.ToList(), delta);
                 }
 
                 i = 0;
-                foreach (var batch in drawables3D)
+                foreach (IEnumerable<IDrawable3D> batch in drawables3D)
                 {
-                    var commandBuffer = threadsCommands3D[i];
-                    renderThreadsTask3D[i++] = this.RenderObjects3D(commandBuffer, batch.ToList(), delta);
+                    CommandList commandBuffer = threadsCommands3D[i];
+                    renderThreadsTask3D[i++] = RenderObjects3D(commandBuffer, batch.ToList(), delta);
                 }
 
                 Task.WaitAll(renderThreadsTask3D);
                 Task.WaitAll(renderThreadsTask2D);
 
-                foreach (var task in renderThreadsTask3D)
+                foreach (Task<CommandList> task in renderThreadsTask3D)
                 {
                     _graphicsDevice.SubmitCommands(task.Result);
                 }
 
-                foreach (var task in renderThreadsTask2D)
+                foreach (Task<CommandList> task in renderThreadsTask2D)
                 {
                     _graphicsDevice.SubmitCommands(task.Result);
                 }
@@ -181,12 +189,12 @@ namespace Striked3D.Services
         {
             return Task.Factory.StartNew(() =>
             {
-                var renderer = new Renderer(clist, this, delta);
+                Renderer renderer = new Renderer(clist, this, delta);
                 clist.PushDebugGroup("2D Renderer - " + Thread.CurrentThread.ManagedThreadId);
                 clist.Begin();
                 clist.SetFramebuffer(_graphicsDevice.SwapchainFramebuffer);
 
-                foreach(var child in drawables)
+                foreach (IDrawable2D child in drawables)
                 {
                     try
                     {
@@ -221,13 +229,13 @@ namespace Striked3D.Services
         {
             return Task.Factory.StartNew(() =>
             {
-                var renderer = new Renderer(clist, this, delta);
+                Renderer renderer = new Renderer(clist, this, delta);
 
                 clist.PushDebugGroup("3D Renderer - " + Thread.CurrentThread.ManagedThreadId);
                 clist.Begin();
                 clist.SetFramebuffer(_graphicsDevice.SwapchainFramebuffer);
 
-                foreach (var child in drawables)
+                foreach (IDrawable3D child in drawables)
                 {
                     try
                     {
@@ -262,13 +270,13 @@ namespace Striked3D.Services
         {
             return Task.Factory.StartNew(() =>
             {
-                var renderer = new Renderer(clist, this, delta);
+                Renderer renderer = new Renderer(clist, this, delta);
 
                 clist.PushDebugGroup("Resources - " + Thread.CurrentThread.ManagedThreadId);
                 clist.Begin();
                 clist.SetFramebuffer(_graphicsDevice.SwapchainFramebuffer);
 
-                foreach (var child in drawables)
+                foreach (IDrawable child in drawables)
                 {
                     try
                     {
@@ -295,7 +303,7 @@ namespace Striked3D.Services
 
                 _graphicsDevice.SubmitCommands(clist);
 
-                if(renderer.requiredWait)
+                if (renderer.requiredWait)
                 {
                     _graphicsDevice.WaitForIdle();
                 }
@@ -308,9 +316,9 @@ namespace Striked3D.Services
 
         private void CreateResources(IWindow window)
         {
-            var factory = _graphicsDevice.ResourceFactory;
+            ResourceFactory factory = _graphicsDevice.ResourceFactory;
             _commandList = factory.CreateCommandList();
-            var renderer = new Renderer(_commandList, this, 0);
+            Renderer renderer = new Renderer(_commandList, this, 0);
 
             threadsCommands = new CommandList[maxPossibleThreads];
             threadsCommands3D = new CommandList[maxPossibleThreads];
@@ -324,42 +332,42 @@ namespace Striked3D.Services
             }
 
             //3d sets
-            Material3DLayout = this._graphicsDevice.ResourceFactory
+            Material3DLayout = _graphicsDevice.ResourceFactory
                 .CreateResourceLayout(new ResourceLayoutDescription(
                 new ResourceLayoutElementDescription("CameraBuffer", ResourceKind.UniformBuffer, ShaderStages.Vertex)
             ));
 
-            Material2DLayout = this._graphicsDevice.ResourceFactory
+            Material2DLayout = _graphicsDevice.ResourceFactory
             .CreateResourceLayout(new ResourceLayoutDescription(
                 new ResourceLayoutElementDescription("CanvasBuffer", ResourceKind.UniformBuffer, ShaderStages.Vertex)
             ));
 
-            FontAtlasLayout = this._graphicsDevice.ResourceFactory
+            FontAtlasLayout = _graphicsDevice.ResourceFactory
             .CreateResourceLayout(new ResourceLayoutDescription(
                 new ResourceLayoutElementDescription("FontTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
                 new ResourceLayoutElementDescription("FontTextureSampler", ResourceKind.Sampler, ShaderStages.Fragment)
             ));
 
-            TransformLayout = this._graphicsDevice.ResourceFactory
+            TransformLayout = _graphicsDevice.ResourceFactory
                 .CreateResourceLayout(new ResourceLayoutDescription(
                 new ResourceLayoutElementDescription("ModalBuffer", ResourceKind.UniformBuffer, ShaderStages.Vertex)
             ));
 
-            this.Default2DMaterial = new Material2D();
-            this.Default2DMaterial.BeforeDraw(renderer);
-            this.Default3DMaterial = new Material3D();
-            this.Default3DMaterial.BeforeDraw(renderer);
+            Default2DMaterial = new Material2D();
+            Default2DMaterial.BeforeDraw(renderer);
+            Default3DMaterial = new Material3D();
+            Default3DMaterial.BeforeDraw(renderer);
 
-            var buffer = new byte[4 * 4 * 4];
-            var proc = new ProcessedTexture(PixelFormat.R8_G8_B8_A8_UNorm, TextureType.Texture2D, 4,4,1,1,1, buffer);
+            byte[] buffer = new byte[4 * 4 * 4];
+            ProcessedTexture proc = new ProcessedTexture(PixelFormat.R8_G8_B8_A8_UNorm, TextureType.Texture2D, 4, 4, 1, 1, 1, buffer);
             DefaultTexture = proc.CreateDeviceTexture(_graphicsDevice, _graphicsDevice.ResourceFactory, TextureUsage.Sampled);
             DefaultTextureView = _graphicsDevice.ResourceFactory.CreateTextureView(DefaultTexture);
 
-            ResourceSetDescription resourceSetDescription = new (this.FontAtlasLayout, DefaultTextureView, _graphicsDevice.LinearSampler);
+            ResourceSetDescription resourceSetDescription = new(FontAtlasLayout, DefaultTextureView, _graphicsDevice.LinearSampler);
             DefaultTextureSet = _graphicsDevice.ResourceFactory.CreateResourceSet(resourceSetDescription);
 
-            ushort[] indicies = new ushort[6] {0,1,2,2,0,3 };
-            var ibDescription = new BufferDescription
+            ushort[] indicies = new ushort[6] { 0, 1, 2, 2, 0, 3 };
+            BufferDescription ibDescription = new BufferDescription
             (
                 (uint)(sizeof(ushort) * indicies.Length),
                 BufferUsage.IndexBuffer
@@ -377,17 +385,17 @@ namespace Striked3D.Services
 
         public void Unregister()
         {
-            foreach (var clist in threadsCommands)
+            foreach (CommandList clist in threadsCommands)
             {
                 clist.Dispose();
             }
 
-            foreach (var clist in threadsCommands3D)
+            foreach (CommandList clist in threadsCommands3D)
             {
                 clist.Dispose();
             }
 
-            foreach (var clist in preRenderCommands)
+            foreach (CommandList clist in preRenderCommands)
             {
                 clist.Dispose();
             }
@@ -398,7 +406,7 @@ namespace Striked3D.Services
 
         public void Update(double delta)
         {
-    
+
         }
     }
 }

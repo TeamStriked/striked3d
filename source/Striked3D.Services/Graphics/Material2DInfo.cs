@@ -1,8 +1,5 @@
 ﻿using Silk.NET.Maths;
-using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
 using Veldrid;
 
 namespace Striked3D.Engine.Resources

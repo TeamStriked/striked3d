@@ -1,14 +1,6 @@
 ﻿using Striked3D.Core;
-using Striked3D.Core.Graphics;
-using Striked3D.Core.Pipeline;
 using Striked3D.Types;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using Veldrid;
-using Veldrid.SPIRV;
-using PipelineVeldrid = Veldrid.Pipeline;
 
 namespace Striked3D.Resources
 {
@@ -16,13 +8,13 @@ namespace Striked3D.Resources
     {
         public GridMaterial3D() : base()
         {
-            this.cullMode = FaceCullMode.Back;
-            this.mode = PrimitiveTopology.TriangleStrip;
-            this.frontFace = FrontFace.CounterClockwise;
-            this.testEnabled = false;
-            this.writeEnable = false;
-            this.depthStencilComparsion = ComparisonKind.GreaterEqual;
-            this.blendState = BlendStateDescription.SingleAlphaBlend;
+            cullMode = FaceCullMode.Back;
+            mode = PrimitiveTopology.TriangleStrip;
+            frontFace = FrontFace.CounterClockwise;
+            testEnabled = false;
+            writeEnable = false;
+            depthStencilComparsion = ComparisonKind.GreaterEqual;
+            blendState = BlendStateDescription.SingleAlphaBlend;
             // this.blendState.AlphaToCoverageEnabled = false;
         }
 
@@ -159,13 +151,13 @@ void main()
 
         public override void BeforeDraw(IRenderer renderer)
         {
-            if (this._isDirty)
+            if (_isDirty)
             {
                 builder.SetVertexLayout(new VertexLayoutDescription[] { Vertex.GetLayout() });
                 builder.SetResourceLayouts(new ResourceLayout[] { renderer.Material3DLayout });
                 builder.Generate(renderer, this);
 
-                this._isDirty = false;
+                _isDirty = false;
             }
         }
     }

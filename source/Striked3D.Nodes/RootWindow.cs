@@ -2,15 +2,12 @@
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
 using Silk.NET.Windowing.Extensions.Veldrid;
-using Striked3D.Core.Graphics;
 using Striked3D.Graphics;
 using Striked3D.Nodes;
 using Striked3D.Platform;
 using Striked3D.Services;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using WindowSilk = Silk.NET.Windowing.Window;
 using WindowSilkHandle = Silk.NET.Windowing.IWindow;
 
@@ -18,7 +15,7 @@ namespace Striked3D.Core.Window
 {
     public class RootWindow : IWindow, IDisposable
     {
-        private ServiceRegistry _serviceRegistry;
+        private readonly ServiceRegistry _serviceRegistry;
         public FrameTimeAverager frameTimer = new FrameTimeAverager(0.3);
 
         private readonly WindowSilkHandle _nativeWindow;
@@ -26,8 +23,8 @@ namespace Striked3D.Core.Window
         public event IWindow.OnResizeHandler OnResize;
         public event IWindow.OnLoadHandler OnLoad;
 
-        private Viewport _rootViewport = new Viewport();
-        public Viewport RootViewport { get { return _rootViewport; } }
+        private readonly Viewport _rootViewport = new Viewport();
+        public Viewport RootViewport => _rootViewport;
 
         public Veldrid.GraphicsDevice CreateDevice()
         {
@@ -35,16 +32,18 @@ namespace Striked3D.Core.Window
 #if (DEBUG)
            var debugMode = true;
 #elif (RELEASE)
-           var debugMode = false;
+            bool debugMode = false;
 #endif
             if (debugMode)
+            {
                 Console.WriteLine("Debug Mode enabled");
+            }
 
             return _nativeWindow?.CreateGraphicsDevice(new()
             {
                 PreferStandardClipSpaceYDirection = true,
                 PreferDepthRangeZeroToOne = true,
-                SyncToVerticalBlank = this.VSync,
+                SyncToVerticalBlank = VSync,
                 ResourceBindingModel = Veldrid.ResourceBindingModel.Improved,
                 Debug = debugMode,
                 SwapchainSrgbFormat = true,
@@ -57,10 +56,7 @@ namespace Striked3D.Core.Window
             return _nativeWindow?.CreateInput();
         }
 
-        public ServiceRegistry Services
-        {
-            get { return _serviceRegistry; }
-        }
+        public ServiceRegistry Services => _serviceRegistry;
 
         public bool VSync
         {
@@ -96,7 +92,7 @@ namespace Striked3D.Core.Window
         {
             _serviceRegistry = new ServiceRegistry();
 
-            var opts = WindowOptions.Default;
+            WindowOptions opts = WindowOptions.Default;
             opts.Position = new Vector2D<int>(0, 0);
             opts.Size = new Vector2D<int>(800, 600);
 
@@ -118,8 +114,8 @@ namespace Striked3D.Core.Window
 
         private void _OnResize(Vector2D<int> obj)
         {
-            this.RootViewport.Size = new Vector2D<float>(this.Size.X, this.Size.Y);
-            this.OnResize?.Invoke(obj);
+            RootViewport.Size = new Vector2D<float>(Size.X, Size.Y);
+            OnResize?.Invoke(obj);
         }
 
         public void Run()
@@ -134,19 +130,19 @@ namespace Striked3D.Core.Window
         private void _OnFrame(double delta)
         {
 
-            var watch = new Stopwatch();
+            Stopwatch watch = new Stopwatch();
             watch.Start();
-            foreach (var service in _serviceRegistry.All)
+            foreach (IService service in _serviceRegistry.All)
             {
                 service.Update(delta);
             }
             watch.Stop();
 
-            this.updateTime = watch.Elapsed.TotalMilliseconds;
+            updateTime = watch.Elapsed.TotalMilliseconds;
 
             if (totalDelta > 1.0)
             {
-                var nt = frameTimer.CurrentAverageFramesPerSecond.ToString("000.0 fps / ") + frameTimer.CurrentAverageFrameTimeMilliseconds.ToString("#00.00 ms");
+                string nt = frameTimer.CurrentAverageFramesPerSecond.ToString("000.0 fps / ") + frameTimer.CurrentAverageFrameTimeMilliseconds.ToString("#00.00 ms");
                 Console.WriteLine(nt + " - Update time: " + updateTime + " - Render time " + renderTime);
                 totalDelta = 0;
             }
@@ -161,35 +157,35 @@ namespace Striked3D.Core.Window
         {
             frameTimer.AddTime(delta);
 
-            var watch = new Stopwatch();
+            Stopwatch watch = new Stopwatch();
             watch.Start();
-            foreach (var service in _serviceRegistry.All)
+            foreach (IService service in _serviceRegistry.All)
             {
                 service.Render(delta);
             }
             watch.Stop();
 
-            this.renderTime = watch.Elapsed.TotalMilliseconds;
+            renderTime = watch.Elapsed.TotalMilliseconds;
 
         }
 
         private void _OnLoad()
         {
-            this.RootViewport.Size = new Vector2D<float>(this.Size.X, this.Size.Y);
-            foreach (var service in _serviceRegistry.All)
+            RootViewport.Size = new Vector2D<float>(Size.X, Size.Y);
+            foreach (IService service in _serviceRegistry.All)
             {
                 service.Register(this);
             }
 
-            var sceneTree = this.Services.Get<ScreneTreeService>();
+            ScreneTreeService sceneTree = Services.Get<ScreneTreeService>();
             sceneTree?.AddNode(_rootViewport);
-            this.OnLoad();
+            OnLoad();
         }
 
 
         public void Dispose()
         {
-            foreach(var service in _serviceRegistry.All)
+            foreach (IService service in _serviceRegistry.All)
             {
                 service.Unregister();
             }

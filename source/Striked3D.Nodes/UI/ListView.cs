@@ -1,13 +1,11 @@
-﻿
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Striked3D.Nodes
 {
     public class ListView : Control
     {
-        LayoutGrid panel;
-        Dictionary<string, ListViewItem> items = new Dictionary<string, ListViewItem>();
+        private LayoutGrid panel;
+        private readonly Dictionary<string, ListViewItem> items = new Dictionary<string, ListViewItem>();
         public ListViewItem activeItem;
 
         public delegate void OnSelectionChangeHandler(string key);
@@ -19,56 +17,59 @@ namespace Striked3D.Nodes
         {
             base.OnEnterTree();
 
-            panel = new LayoutGrid();
-            panel.Size = new Types.StringVector("100%", "100%");
-            panel.Position = new Types.StringVector(0, 0);
-            panel.BackgroundColor = Veldrid.RgbaFloat.Clear;
+            panel = new LayoutGrid
+            {
+                Size = new Types.StringVector("100%", "100%"),
+                Position = new Types.StringVector(0, 0),
+                BackgroundColor = Veldrid.RgbaFloat.Clear
+            };
 
-            this.AddChild(panel);
+            AddChild(panel);
         }
 
         public void AddElement(string key, string content)
         {
-            lock(this.items)
+            lock (items)
             {
-                if (!this.items.ContainsKey(key))
+                if (!items.ContainsKey(key))
                 {
-                    var viewItem = new ListViewItem();
-
-                    viewItem.Content = content;
-                    viewItem.Position = new Types.StringVector(0, 0);
-                    viewItem.Color = new Veldrid.RgbaFloat(0, 1, 1, 1);
-                    viewItem.Background = Veldrid.RgbaFloat.Clear;
-                    viewItem.BackgroundHover = Veldrid.RgbaFloat.Black;
-                    viewItem.ColorHover = Veldrid.RgbaFloat.White;
-                    viewItem.Key = key;
+                    ListViewItem viewItem = new ListViewItem
+                    {
+                        Content = content,
+                        Position = new Types.StringVector(0, 0),
+                        Color = new Veldrid.RgbaFloat(0, 1, 1, 1),
+                        Background = Veldrid.RgbaFloat.Clear,
+                        BackgroundHover = Veldrid.RgbaFloat.Black,
+                        ColorHover = Veldrid.RgbaFloat.White,
+                        Key = key
+                    };
                     viewItem.OnClick += () =>
                     {
                         activeItem = viewItem;
                         OnSelectionChange?.Invoke(key);
                     };
 
-                    this.panel.AddChild(viewItem);
-                    this.items.Add(viewItem.Key, viewItem);
+                    panel.AddChild(viewItem);
+                    items.Add(viewItem.Key, viewItem);
                 }
             }
         }
 
         public void RemoveElement(string key)
         {
-            lock (this.items)
+            lock (items)
             {
-                if (this.items.ContainsKey(key))
+                if (items.ContainsKey(key))
                 {
-                    this.items[key].FreeQueue();
-                    this.items.Remove(key);
+                    items[key].FreeQueue();
+                    items.Remove(key);
                 }
             }
         }
 
         public Dictionary<string, ListViewItem> GetItems()
         {
-            return this.items; ;
+            return items; ;
         }
     }
 }

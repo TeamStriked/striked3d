@@ -1,14 +1,6 @@
 ﻿using Striked3D.Core;
-using Striked3D.Core.Graphics;
-using Striked3D.Core.Pipeline;
 using Striked3D.Types;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using Veldrid;
-using Veldrid.SPIRV;
-using PipelineVeldrid = Veldrid.Pipeline;
 
 namespace Striked3D.Resources
 {
@@ -16,8 +8,8 @@ namespace Striked3D.Resources
     {
         public Material3D() : base()
         {
-            this.cullMode = FaceCullMode.Back;
-            this.frontFace = FrontFace.Clockwise;
+            cullMode = FaceCullMode.Back;
+            frontFace = FrontFace.Clockwise;
         }
 
         public string _VertexCode = @"
@@ -72,19 +64,19 @@ void main()
 {
     fsout_Color = vec4(1,0,0,1);
 }";
- 
+
         public override string VertexCode => _VertexCode;
         public override string FragmentCode => _FragmentCode;
 
         public override void BeforeDraw(IRenderer renderer)
         {
-            if(this._isDirty)
+            if (_isDirty)
             {
                 builder.SetVertexLayout(new VertexLayoutDescription[] { Vertex.GetLayout() });
                 builder.SetResourceLayouts(new ResourceLayout[] { renderer.Material3DLayout, renderer.TransformLayout });
                 builder.Generate(renderer, this);
 
-                this._isDirty = false;
+                _isDirty = false;
             }
         }
 

@@ -1,9 +1,4 @@
-﻿using Striked3D.Core;
-using Striked3D.Core.Graphics;
-using Striked3D.Core.Input;
-using Striked3D.Resources;
-using System;
-using System.Threading.Tasks;
+﻿using Striked3D.Resources;
 using Veldrid;
 
 namespace Striked3D.Nodes
@@ -23,131 +18,134 @@ namespace Striked3D.Nodes
         private Font _Font = Font.SystemFont;
         public Font Font
         {
-            get { return _Font; }
-            set { 
-                SetProperty("Font", ref _Font, value); 
-                this.UpdateSizes(); 
+            get => _Font;
+            set
+            {
+                SetProperty("Font", ref _Font, value);
+                UpdateSizes();
             }
         }
 
         public RgbaFloat Color
         {
-            get { return _Color; }
+            get => _Color;
             set
             {
-                var origValue = _Color;
+                RgbaFloat origValue = _Color;
                 SetProperty("Color", ref _Color, value);
-                if(!origValue.Equals(value))
+                if (!origValue.Equals(value))
                 {
-                    this.UpdateCanvas();
+                    UpdateCanvas();
                 }
             }
         }
 
         public RgbaFloat Background
         {
-            get { return _Background; }
+            get => _Background;
             set
             {
-                var origValue = _Background;
+                RgbaFloat origValue = _Background;
                 SetProperty("Background", ref _Background, value);
 
                 if (!origValue.Equals(value))
                 {
-                    this.UpdateCanvas();
+                    UpdateCanvas();
                 }
             }
         }
 
         public RgbaFloat BackgroundHover
         {
-            get { return _BackgroundHover; }
+            get => _BackgroundHover;
             set
             {
-                var origValue = _BackgroundHover;
+                RgbaFloat origValue = _BackgroundHover;
                 SetProperty("BackgroundHover", ref _BackgroundHover, value);
                 if (!origValue.Equals(value))
                 {
-                    this.UpdateCanvas();
+                    UpdateCanvas();
                 }
             }
         }
 
         public RgbaFloat ColorHover
         {
-            get { return _ColorHover; }
+            get => _ColorHover;
             set
             {
-                var origValue = _ColorHover;
+                RgbaFloat origValue = _ColorHover;
                 SetProperty("ColorHover", ref _ColorHover, value);
-                this.UpdateCanvas();
+                UpdateCanvas();
                 if (!origValue.Equals(value))
                 {
-                    this.UpdateCanvas();
+                    UpdateCanvas();
                 }
             }
         }
 
         public float FontSize
         {
-            get { return _FontSize; }
-            set { 
-                var origValue = _FontSize; 
+            get => _FontSize;
+            set
+            {
+                float origValue = _FontSize;
                 SetProperty("FontSize", ref _FontSize, value);
 
                 if (!origValue.Equals(value))
                 {
-                    this.DrawCanvas();
+                    DrawCanvas();
                 }
             }
         }
 
         public string Content
         {
-            get { return _Content; }
+            get => _Content;
             set
             {
-                var origValue = _Content; 
-                SetProperty("Content", ref _Content, value); 
-                if(!origValue.Equals(value))
+                string origValue = _Content;
+                SetProperty("Content", ref _Content, value);
+                if (!origValue.Equals(value))
                 {
-                    this.UpdateSizes();
+                    UpdateSizes();
                 }
             }
         }
 
         public string Key
         {
-            get { return _Key; }
-            set { SetProperty("Key", ref _Key, value); }
+            get => _Key;
+            set => SetProperty("Key", ref _Key, value);
         }
 
-        public  ListViewItem() : base(){
-            this.OnHover += () => {  this.UpdateCanvas(); };
-            this.OnHoverLeave += () => {  this.UpdateCanvas(); };
+        public ListViewItem() : base()
+        {
+            OnHover += () => { UpdateCanvas(); };
+            OnHoverLeave += () => { UpdateCanvas(); };
         }
 
         public override void DrawCanvas()
         {
 
-            var bgColor = isHover ? BackgroundHover : Background;
+            RgbaFloat bgColor = isHover ? BackgroundHover : Background;
 
             if (bgColor.A > 0)
             {
-                this.DrawRect( bgColor, ScreenPosition, ScreenSize);
+                DrawRect(bgColor, ScreenPosition, ScreenSize);
             }
 
-            var foregroundColor = isHover ? ColorHover : Color;
+            RgbaFloat foregroundColor = isHover ? ColorHover : Color;
             if (foregroundColor.A > 0)
             {
-                 this.DrawText(this.Font, foregroundColor, ScreenPosition,  FontSize, Content);
+                DrawText(Font, foregroundColor, ScreenPosition, FontSize, Content);
             }
             else
             {
                 return;
             }
 
-            this._screenSize.Y = FontSize;
+            _screenSize.Y = FontSize;
         }
 
     }

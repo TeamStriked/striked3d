@@ -5,7 +5,6 @@ using Striked3D.Services;
 using Striked3D.Utils;
 using System;
 using System.Collections.Generic;
-using System.Timers;
 using Veldrid;
 
 namespace Striked3D.Nodes
@@ -19,29 +18,29 @@ namespace Striked3D.Nodes
     }
     public class EditorNodeView : Control
     {
-        LayoutGrid view;
+        private LayoutGrid view;
 
         public Editor editor;
         private Node selectedNode;
         private Guid selectedNodeId;
-        private List<EditorNodeViewItem> itemList = new List<EditorNodeViewItem>();
+        private readonly List<EditorNodeViewItem> itemList = new List<EditorNodeViewItem>();
 
         public void SetNode(Guid nodeid)
         {
-            foreach (var child in this.view.GetChilds())
+            foreach (INode child in view.GetChilds())
             {
-                this.view.RemoveChild(child);
+                view.RemoveChild(child);
             }
 
-            var treeService = this.Root.Services.Get<ScreneTreeService>();
-            var newNode = treeService.GetNode<Node>(nodeid);
+            ScreneTreeService treeService = Root.Services.Get<ScreneTreeService>();
+            Node newNode = treeService.GetNode<Node>(nodeid);
 
             if (newNode != null && selectedNodeId != nodeid)
             {
                 selectedNode = newNode;
                 selectedNodeId = nodeid;
 
-                this.generateProperties(selectedNode);
+                generateProperties(selectedNode);
             }
 
             if (newNode == null)
@@ -56,85 +55,96 @@ namespace Striked3D.Nodes
         }
         private void generateProperties(Striked3D.Core.Object node)
         {
-       
-            var properties = node.GetExportProperties();
 
-            foreach (var prop in properties)
+            Dictionary<string, Type> properties = node.GetExportProperties();
+
+            foreach (KeyValuePair<string, Type> prop in properties)
             {
 
-                var labelLayout = new LayoutGrid();
-                labelLayout.Direction = UIPanelDirection.VERTICAL;
-                labelLayout.Size = new Types.StringVector("100%", "200px");
-                labelLayout.Position = new Types.StringVector(0, 0);
-                labelLayout.AutoHeight = true;
+                LayoutGrid labelLayout = new LayoutGrid
+                {
+                    Direction = UIPanelDirection.VERTICAL,
+                    Size = new Types.StringVector("100%", "200px"),
+                    Position = new Types.StringVector(0, 0),
+                    AutoHeight = true
+                };
 
                 view.AddChild(labelLayout);
-               
 
-                var label = new Label();
 
-                label.Content = prop.Key;
-                label.Padding = new Vector4D<int>(5, 5, 5, 5);
+                Label label = new Label
+                {
+                    Content = prop.Key,
+                    Padding = new Vector4D<int>(5, 5, 5, 5)
+                };
                 // label.Font = new Resources.Font("Arial", SkiaSharp.SKFontStyleWeight.Bold);
 
                 labelLayout.AddChild(label);
-           
-               var layout = new LayoutGrid();
-               layout.Direction = UIPanelDirection.HORIZONTAL;
-               layout.Size = new Types.StringVector("100%", "50px");
-               layout.Position = new Types.StringVector(0, 0);
-               layout.AutoHeight = true;
-               layout.AutoGrid = true;
 
-               labelLayout.AddChild(layout);
+                LayoutGrid layout = new LayoutGrid
+                {
+                    Direction = UIPanelDirection.HORIZONTAL,
+                    Size = new Types.StringVector("100%", "50px"),
+                    Position = new Types.StringVector(0, 0),
+                    AutoHeight = true,
+                    AutoGrid = true
+                };
 
-               if (prop.Value == typeof(Vector3D<System.Single>))
-               {
-                   this.createVectorField(layout, "X", node, prop.Key, "X");
-                   this.createVectorField(layout, "Y", node, prop.Key, "Y");
-                   this.createVectorField(layout, "Z", node, prop.Key, "Z");
-               }
+                labelLayout.AddChild(layout);
 
-               if (prop.Value == typeof(Quaternion<System.Single>))
-               {
-                   this.createVectorField(layout, "X", node, prop.Key, "X");
-                   this.createVectorField(layout, "Y", node, prop.Key, "Y");
-                   this.createVectorField(layout, "Z", node, prop.Key, "Z");
-                   this.createVectorField(layout, "W", node, prop.Key, "W");
-               }
+                if (prop.Value == typeof(Vector3D<float>))
+                {
+                    createVectorField(layout, "X", node, prop.Key, "X");
+                    createVectorField(layout, "Y", node, prop.Key, "Y");
+                    createVectorField(layout, "Z", node, prop.Key, "Z");
+                }
 
-               if (prop.Value == typeof(Transform3D))
-               {
-                   var contentValue = node.GetValue<Transform3D>(prop.Key);
-                   if(contentValue != null)
-                   {
-                       this.generateProperties(contentValue);
-                   }
-               }
-         
+                if (prop.Value == typeof(Quaternion<float>))
+                {
+                    createVectorField(layout, "X", node, prop.Key, "X");
+                    createVectorField(layout, "Y", node, prop.Key, "Y");
+                    createVectorField(layout, "Z", node, prop.Key, "Z");
+                    createVectorField(layout, "W", node, prop.Key, "W");
+                }
+
+                if (prop.Value == typeof(Transform3D))
+                {
+                    Transform3D contentValue = node.GetValue<Transform3D>(prop.Key);
+                    if (contentValue != null)
+                    {
+                        generateProperties(contentValue);
+                    }
+                }
+
             }
         }
 
         private TextBox createVectorField(LayoutGrid grid, string label, Striked3D.Core.Object obj, string key, string row)
         {
-            var contentValue = obj.GetValue(key);
-            var contentValueType = obj.GetValueType(key);
+            object contentValue = obj.GetValue(key);
+            Type contentValueType = obj.GetValueType(key);
 
             if (contentValue == null)
+            {
                 return null;
+            }
 
-            var rowValue = contentValueType.GetField(row).GetValue(contentValue);
+            object rowValue = contentValueType.GetField(row).GetValue(contentValue);
 
-            if(rowValue == null)
+            if (rowValue == null)
+            {
                 return null;
+            }
 
-            var textBox = new TextBox();
-            textBox.Padding = new Vector4D<int>(5, 5, 5, 5);
-            textBox.Content = rowValue.ToString();
-            textBox.Background = new RgbaFloat(1, 0, 0, 1);
+            TextBox textBox = new TextBox
+            {
+                Padding = new Vector4D<int>(5, 5, 5, 5),
+                Content = rowValue.ToString(),
+                Background = new RgbaFloat(1, 0, 0, 1)
+            };
             textBox.OnChange += (string value) =>
             {
-                var previousValue = obj.GetValue(key);
+                object previousValue = obj.GetValue(key);
 
                 if (rowValue is float)
                 {
@@ -148,7 +158,8 @@ namespace Striked3D.Nodes
                 obj.SetValue(key, previousValue);
             };
 
-            this.itemList.Add(new EditorNodeViewItem {
+            itemList.Add(new EditorNodeViewItem
+            {
                 Key = key,
                 Row = row,
                 obj = obj,
@@ -163,17 +174,19 @@ namespace Striked3D.Nodes
         {
             base.Update(delta);
 
-            foreach(var item in this.itemList)
+            foreach (EditorNodeViewItem item in itemList)
             {
-                if(!item.TextBox.isFocused )
+                if (!item.TextBox.isFocused)
                 {
-                    var contentValue = item.obj.GetValue(item.Key);
-                    var contentValueType = item.obj.GetValueType(item.Key);
+                    object contentValue = item.obj.GetValue(item.Key);
+                    Type contentValueType = item.obj.GetValueType(item.Key);
 
                     if (contentValue == null)
+                    {
                         continue;
+                    }
 
-                    var rowValue = contentValueType.GetField(item.Row).GetValue(contentValue);
+                    object rowValue = contentValueType.GetField(item.Row).GetValue(contentValue);
                     item.TextBox.Content = rowValue.ToString();
                 }
             }
@@ -183,12 +196,14 @@ namespace Striked3D.Nodes
         {
             base.OnEnterTree();
 
-            view = new LayoutGrid();
-            view.Direction = UIPanelDirection.VERTICAL;
-            view.Size = new Types.StringVector("100%", "100%");
-            view.Position = new Types.StringVector(0, 0);
+            view = new LayoutGrid
+            {
+                Direction = UIPanelDirection.VERTICAL,
+                Size = new Types.StringVector("100%", "100%"),
+                Position = new Types.StringVector(0, 0)
+            };
 
-            this.AddChild(view);
+            AddChild(view);
         }
     }
 }

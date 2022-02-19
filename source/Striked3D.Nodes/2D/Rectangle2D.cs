@@ -1,13 +1,4 @@
-﻿using Silk.NET.Maths;
-using Striked3D.Core;
-using Striked3D.Core.Graphics;
-using Striked3D.Types;
-using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
-using Veldrid;
+﻿using Veldrid;
 
 namespace Striked3D.Nodes
 {
@@ -17,17 +8,17 @@ namespace Striked3D.Nodes
 
         public RgbaFloat Color
         {
-            get { return _Color; }
+            get => _Color;
             set
             {
                 SetProperty("Color", ref _Color, value);
-                this.UpdateCanvas();
+                UpdateCanvas();
             }
         }
 
         public override void DrawCanvas()
         {
-            this.DrawRect(Color, ScreenPosition, ScreenSize);
+            DrawRect(Color, ScreenPosition, ScreenSize);
         }
     }
 }

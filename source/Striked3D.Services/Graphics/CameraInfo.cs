@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-
-namespace Striked3D.Resources
+﻿namespace Striked3D.Resources
 {
 
 

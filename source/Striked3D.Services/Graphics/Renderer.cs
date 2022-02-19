@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Striked3D.Core;
+using Striked3D.Platform;
+using Striked3D.Services;
+using System;
+using System.Linq;
 using System.Text;
 using Veldrid;
-using System.Linq;
 using Veldrid.SPIRV;
-using Striked3D.Platform;
-using Striked3D.Core;
-using Striked3D.Services;
 
 namespace Striked3D.Graphics
 {
@@ -49,21 +48,21 @@ namespace Striked3D.Graphics
                 Logger.Debug(this, "CreateShader");
             }
 
-            var vertexShaderDesc = new ShaderDescription
+            ShaderDescription vertexShaderDesc = new ShaderDescription
              (
                  ShaderStages.Vertex,
                  Encoding.UTF8.GetBytes(vertexCode),
                  "main"
              );
 
-            var fragmentShaderDesc = new ShaderDescription
+            ShaderDescription fragmentShaderDesc = new ShaderDescription
             (
                 ShaderStages.Fragment,
                 Encoding.UTF8.GetBytes(fragmentCode),
                 "main"
             );
 
-            return this.service.Renderer3D.ResourceFactory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
+            return service.Renderer3D.ResourceFactory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
         }
 
         public Veldrid.Pipeline CreatePipeline(GraphicsPipelineDescription desc)
@@ -73,12 +72,12 @@ namespace Striked3D.Graphics
                 Logger.Debug(this, "CreatePipeline");
             }
             desc.Outputs = service.Renderer3D.MainSwapchain.Framebuffer.OutputDescription;
-            return this.service.Renderer3D.ResourceFactory.CreateGraphicsPipeline(desc);
+            return service.Renderer3D.ResourceFactory.CreateGraphicsPipeline(desc);
         }
 
         public void SetViewport(IViewport viewport)
         {
-            if(viewport != null && lastViewport != viewport.Id)
+            if (viewport != null && lastViewport != viewport.Id)
             {
                 clist.SetViewport(0, new Veldrid.Viewport(viewport.Position.X, viewport.Position.Y, viewport.Size.X, viewport.Size.Y, 0, 1));
                 clist.SetScissorRect(0, (uint)viewport.Position.X, (uint)viewport.Position.Y, (uint)viewport.Size.X, (uint)viewport.Size.Y);
@@ -88,19 +87,19 @@ namespace Striked3D.Graphics
 
         public void SetMaterial(IMaterial mat)
         {
-            if(mat != null && lastMaterial !=  mat.Id)
+            if (mat != null && lastMaterial != mat.Id)
             {
                 clist.SetPipeline(mat.Pipeline);
-                lastMaterial = mat.Id; 
+                lastMaterial = mat.Id;
             }
         }
 
         public void SetResourceSets(ResourceSet[] sets)
         {
-            if(sets  != null && sets.Length > 0)
+            if (sets != null && sets.Length > 0)
             {
-                var hash = sets.Sum(df => df.GetHashCode());
-                if(lastResourceSet == 0 || hash != lastResourceSet)
+                int hash = sets.Sum(df => df.GetHashCode());
+                if (lastResourceSet == 0 || hash != lastResourceSet)
                 {
                     for (uint i = 0; i < sets.Length; i++)
                     {
@@ -123,7 +122,7 @@ namespace Striked3D.Graphics
             }
 
             clist.UpdateBuffer(buffer, bufferOffsetInBytes, source);
-            this.requiredWait = true;
+            requiredWait = true;
         }
 
         public void UpdateBuffer<T>(
@@ -131,13 +130,13 @@ namespace Striked3D.Graphics
            uint bufferOffsetInBytes,
            T[] source) where T : unmanaged
         {
-            if(PlatformInfo.DebugRendering)
-            { 
+            if (PlatformInfo.DebugRendering)
+            {
                 Logger.Debug(this, "UpdateBuffer");
             }
 
             clist.UpdateBuffer(buffer, bufferOffsetInBytes, (ReadOnlySpan<T>)source);
-            this.requiredWait = true;
+            requiredWait = true;
         }
 
         public DeviceBuffer CreateBuffer(BufferDescription desc)
@@ -147,7 +146,7 @@ namespace Striked3D.Graphics
                 Logger.Debug(this, "CreateBuffer");
             }
 
-            this.requiredWait = true;
+            requiredWait = true;
             return service.Renderer3D.ResourceFactory.CreateBuffer(desc);
         }
 
@@ -158,7 +157,7 @@ namespace Striked3D.Graphics
                 Logger.Debug(this, "CreateResourceSet");
             }
 
-            this.requiredWait = true;
+            requiredWait = true;
             return service.Renderer3D.ResourceFactory.CreateResourceSet(description);
         }
 

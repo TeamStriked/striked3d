@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using Veldrid;
 
 namespace Striked3D.Core.AssetsPrimitives

@@ -1,11 +1,8 @@
 ﻿using Striked3D.Core.Window;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Striked3D.Core
 {
-    public interface  INode : IObject
+    public interface INode : IObject
     {
         public IWindow Root { get; set; }
         public string Name { get; }

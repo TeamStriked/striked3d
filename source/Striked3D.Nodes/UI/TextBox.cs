@@ -1,11 +1,6 @@
-﻿
-using Striked3D.Core;
-using Striked3D.Core.Graphics;
-using Striked3D.Core.Input;
+﻿using Striked3D.Core.Input;
 using Striked3D.Helpers;
 using Striked3D.Resources;
-using System;
-using System.Threading.Tasks;
 using Veldrid;
 
 namespace Striked3D.Nodes
@@ -25,11 +20,11 @@ namespace Striked3D.Nodes
 
         private string newInput = null;
 
-        private RgbaFloat _Color = new (1, 1, 1, 1);
+        private RgbaFloat _Color = new(1, 1, 1, 1);
         private RgbaFloat _Background = RGBHelper.FromHex("#292a2f");
 
         private RgbaFloat _BackgroundHover = RGBHelper.FromHex("#212226");
-        private RgbaFloat _ColorHover = new (1, 1, 1, 1);
+        private RgbaFloat _ColorHover = new(1, 1, 1, 1);
 
         private RgbaFloat _BorderColor = RGBHelper.FromHex("#303338");
 
@@ -43,121 +38,137 @@ namespace Striked3D.Nodes
 
         public Font Font
         {
-            get { return _Font; }
-            set { SetProperty("Font", ref _Font, value); this.UpdateSizes(); }
+            get => _Font;
+            set { SetProperty("Font", ref _Font, value); UpdateSizes(); }
         }
 
         public RgbaFloat BorderColor
         {
-            get { return _BorderColor; }
+            get => _BorderColor;
             set
             {
-                var orig = _BorderColor;
+                RgbaFloat orig = _BorderColor;
                 SetProperty("BorderColor", ref _BorderColor, value);
                 if (orig != value)
-                    this.UpdateCanvas();
+                {
+                    UpdateCanvas();
+                }
             }
         }
         public float BorderThickness
         {
-            get { return _borderThickness; }
+            get => _borderThickness;
             set
             {
-                var orig = _borderThickness;
+                float orig = _borderThickness;
                 SetProperty("BorderThickness", ref _borderThickness, value);
                 if (orig != value)
-                    this.UpdateCanvas();
+                {
+                    UpdateCanvas();
+                }
             }
         }
 
         public RgbaFloat Color
         {
-            get { return _Color; }
+            get => _Color;
             set
             {
-                var orig = _Color;
+                RgbaFloat orig = _Color;
                 SetProperty("Color", ref _Color, value);
                 if (orig != value)
-                    this.UpdateCanvas();
+                {
+                    UpdateCanvas();
+                }
             }
         }
 
         public RgbaFloat Background
         {
-            get { return _Background; }
+            get => _Background;
             set
             {
-                var orig = _Background;
+                RgbaFloat orig = _Background;
                 SetProperty("Background", ref _Background, value);
                 if (orig != value)
-                    this.UpdateCanvas();
+                {
+                    UpdateCanvas();
+                }
             }
         }
 
         public RgbaFloat BackgroundHover
         {
-            get { return _BackgroundHover; }
+            get => _BackgroundHover;
             set
             {
-                var orig = _BackgroundHover;
+                RgbaFloat orig = _BackgroundHover;
                 SetProperty("BackgroundHover", ref _BackgroundHover, value);
                 if (orig != value)
-                    this.UpdateCanvas();
+                {
+                    UpdateCanvas();
+                }
             }
         }
 
         public RgbaFloat ColorHover
         {
-            get { return _ColorHover; }
+            get => _ColorHover;
             set
             {
-                var orig = _ColorHover;
+                RgbaFloat orig = _ColorHover;
                 SetProperty("ColorHover", ref _ColorHover, value);
                 if (orig != value)
-                    this.UpdateCanvas();
+                {
+                    UpdateCanvas();
+                }
             }
         }
 
         public float FontSize
         {
-            get { return _FontSize; }
-            set { SetProperty("FontSize", ref _FontSize, value); this.UpdateSizes(); }
+            get => _FontSize;
+            set { SetProperty("FontSize", ref _FontSize, value); UpdateSizes(); }
         }
 
         public string Content
         {
-            get { return _Content; }
-            set { 
-                var orig = _Content;
+            get => _Content;
+            set
+            {
+                string orig = _Content;
                 SetProperty("Content", ref _Content, value);
                 if (orig != value)
-                    this.UpdateSizes(); 
+                {
+                    UpdateSizes();
+                }
             }
         }
 
         public string Key
         {
-            get { return _Key; }
-            set { SetProperty("Key", ref _Key, value); }
+            get => _Key;
+            set => SetProperty("Key", ref _Key, value);
         }
 
         public string GetContentAsString()
         {
-            return this.Content;
+            return Content;
         }
 
         public override void OnEnterTree()
         {
             base.OnEnterTree();
-            inputService = Root.Services.Get<InputService>();   
+            inputService = Root.Services.Get<InputService>();
         }
         public TextBox() : base()
         {
-            OnHover += () => this.DrawCanvas();
-            OnHoverLeave += () => this.DrawCanvas();
-            OnFocus += () => this.DrawCanvas();
-            OnFocusLeave += () => this.DrawCanvas();
+            OnHover += () => DrawCanvas();
+            OnHoverLeave += () => DrawCanvas();
+            OnFocus += () => DrawCanvas();
+            OnFocusLeave += () => DrawCanvas();
         }
+
         /*
         private void drawBlinker( RgbaFloat foregroundColor)
         {
@@ -174,26 +185,26 @@ namespace Striked3D.Nodes
             }
         }
         */
-        bool isBlinking = true;
+        private bool isBlinking = true;
 
         public override void DrawCanvas()
         {
-            var pos = ScreenPosition;
+            Silk.NET.Maths.Vector2D<float> pos = ScreenPosition;
 
-            pos.Y +=  this.Padding.Y;
-            pos.X += this.Padding.X;
+            pos.Y += Padding.Y;
+            pos.X += Padding.X;
 
-            var bgColor = isHover ? BackgroundHover : Background;
+            RgbaFloat bgColor = isHover ? BackgroundHover : Background;
             if (bgColor.A != 0)
             {
-                this.DrawRect(bgColor, ScreenPosition, ScreenSize);
-               // this.DrawRectBorder( _BorderColor, ScreenPosition, ScreenPostionEnd, BorderThickness);
+                DrawRect(bgColor, ScreenPosition, ScreenSize);
+                // this.DrawRectBorder( _BorderColor, ScreenPosition, ScreenPostionEnd, BorderThickness);
             }
 
-            var foregroundColor = isHover ? ColorHover : Color;
+            RgbaFloat foregroundColor = isHover ? ColorHover : Color;
             if (foregroundColor.A != 0)
             {
-                this.DrawText(_Font, foregroundColor, pos, FontSize, Content); 
+                DrawText(_Font, foregroundColor, pos, FontSize, Content);
 
                 if (isFocused)
                 {
@@ -201,7 +212,7 @@ namespace Striked3D.Nodes
                 }
             }
 
-            this._screenSize.Y = FontSize + this.Padding.Y + this.Padding.Z;
+            _screenSize.Y = FontSize + Padding.Y + Padding.Z;
         }
 
         public override void Update(double delta)
@@ -221,17 +232,19 @@ namespace Striked3D.Nodes
 
             if (!isFocused)
             {
-                if(this.newInput != null)
+                if (newInput != null)
                 {
-                    OnChange?.Invoke(this.newInput);
-                    this.newInput = null;
+                    OnChange?.Invoke(newInput);
+                    newInput = null;
                 }
 
                 return;
             }
 
             if (backspaceWaitTimeDelta >= simulateWaitKeyBackspaceTime)
+            {
                 backspaceWaitTimeDelta = 0;
+            }
 
             if (inputService.IsKeyPressed(Silk.NET.Input.Key.Backspace) && isFocused && backspaceWaitTimeDelta == 0)
             {
@@ -239,7 +252,7 @@ namespace Striked3D.Nodes
                 if (result != null && result.Length > 0)
                 {
                     result = result.Remove(result.Length - 1);
-                    this.newInput = result;
+                    newInput = result;
                 }
 
                 Content = result;
@@ -266,26 +279,28 @@ namespace Striked3D.Nodes
             base.OnInput(ev);
 
             if (!isFocused)
-                return;
-
-            if (ev is KeyCharEvent )
             {
-                var keyInput = (ev as KeyCharEvent);
+                return;
+            }
+
+            if (ev is KeyCharEvent)
+            {
+                KeyCharEvent keyInput = (ev as KeyCharEvent);
                 Content += keyInput.Char;
-                this.newInput = Content;
+                newInput = Content;
             }
 
             if (ev is KeyInputEvent)
             {
-                var keyInput = (ev as KeyInputEvent);
+                KeyInputEvent keyInput = (ev as KeyInputEvent);
 
                 if (keyInput.Key == Silk.NET.Input.Key.Backspace)
                 {
                     backspaceWaitTimeDelta = 0;
                 }
-                if (keyInput.Key == Silk.NET.Input.Key.Enter && this.isFocused)
+                if (keyInput.Key == Silk.NET.Input.Key.Enter && isFocused)
                 {
-                    this.SetFocus(false);
+                    SetFocus(false);
                 }
             }
         }

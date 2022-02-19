@@ -1,5 +1,5 @@
-﻿using PipelineVeldrid = Veldrid.Pipeline;
-using Veldrid;
+﻿using Veldrid;
+using PipelineVeldrid = Veldrid.Pipeline;
 
 namespace Striked3D.Core.Pipeline
 {
@@ -18,28 +18,25 @@ namespace Striked3D.Core.Pipeline
             this.layouts = layouts;
         }
 
-        public PipelineVeldrid Pipeline
-        {
-            get { return _pipeline; }   
-        }
+        public PipelineVeldrid Pipeline => _pipeline;
 
         public void SetVertexLayout(VertexLayoutDescription[] layout)
         {
-            this.descriptions = layout;
+            descriptions = layout;
         }
 
         public void Generate(IRenderer renderer, IMaterial material)
         {
-            if (!isDirty )
+            if (!isDirty)
             {
                 return;
             }
 
-            this.Dispose();
+            Dispose();
 
-            foreach(var layout in layouts)
+            foreach (ResourceLayout layout in layouts)
             {
-                if(layout == null)
+                if (layout == null)
                 {
                     return;
                 }
@@ -48,7 +45,7 @@ namespace Striked3D.Core.Pipeline
             _shaders = renderer.CreateShader(material.VertexCode, material.FragmentCode);
 
             // Create pipeline
-            var pipelineDescription = new GraphicsPipelineDescription
+            GraphicsPipelineDescription pipelineDescription = new GraphicsPipelineDescription
             {
                 BlendState = material.blendState,
                 DepthStencilState = new
@@ -74,25 +71,27 @@ namespace Striked3D.Core.Pipeline
                 ),
             };
 
-             if (material.constantSize > 0)
-               pipelineDescription.PushConstantDescription = new PushConstantDescription(material.constantSize);
+            if (material.constantSize > 0)
+            {
+                pipelineDescription.PushConstantDescription = new PushConstantDescription(material.constantSize);
+            }
 
-              _pipeline = renderer.CreatePipeline(pipelineDescription);
+            _pipeline = renderer.CreatePipeline(pipelineDescription);
 
-             this.isDirty = false;
+            isDirty = false;
         }
 
         public void Dispose()
         {
-            this._pipeline?.Dispose();
-            if(_shaders != null)
+            _pipeline?.Dispose();
+            if (_shaders != null)
             {
-                foreach (var child in _shaders)
+                foreach (Shader child in _shaders)
                 {
                     child?.Dispose();
                 }
             }
-            this._pipeline = null;
+            _pipeline = null;
         }
     }
 }

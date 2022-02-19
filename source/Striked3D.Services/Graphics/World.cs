@@ -1,5 +1,4 @@
 ﻿using Silk.NET.Maths;
-using System;
 using Veldrid;
 
 namespace Striked3D.Core.Graphics

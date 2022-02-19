@@ -1,13 +1,6 @@
 ﻿using Silk.NET.Maths;
-using Striked3D.Core;
-using Striked3D.Core.Graphics;
 using Striked3D.Core.Input;
 using Striked3D.Types;
-using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Text;
-using Veldrid;
 
 namespace Striked3D.Nodes
 {
@@ -43,7 +36,7 @@ namespace Striked3D.Nodes
 
         public void SetFocus(bool focused)
         {
-            this._isFocused = focused;
+            _isFocused = focused;
         }
 
         public override void OnEnterTree()
@@ -51,7 +44,7 @@ namespace Striked3D.Nodes
             base.OnEnterTree();
             UpdateSizes();
 
-            this.Root.OnResize += Root_OnResize;
+            Root.OnResize += Root_OnResize;
         }
 
         private void Root_OnResize(Vector2D<int> newSize)
@@ -61,76 +54,76 @@ namespace Striked3D.Nodes
 
         public StringVector Size
         {
-            get { return _Size; }
+            get => _Size;
             set
             {
-                var orig = _Size;
+                StringVector orig = _Size;
 
                 if (!orig.Equals(value))
                 {
                     SetProperty("Size", ref _Size, value);
-                    this.UpdateSizes(); 
+                    UpdateSizes();
                 }
             }
         }
 
         public StringVector Position
         {
-            get { return _Position; }
+            get => _Position;
             set
             {
-                var orig = _Position;
+                StringVector orig = _Position;
 
                 if (!orig.Equals(value))
                 {
                     SetProperty("Position", ref _Position, value);
-                    this.UpdateSizes();
+                    UpdateSizes();
                 }
             }
         }
 
         public Vector4D<int> Padding
         {
-            get { return _Padding; }
+            get => _Padding;
             set
             {
-                var orig = _Padding;
+                Vector4D<int> orig = _Padding;
 
                 if (!orig.Equals(value))
                 {
                     SetProperty("Padding", ref _Padding, value);
-                    this.UpdateSizes();
+                    UpdateSizes();
                 }
             }
         }
 
         public void UpdateSize()
         {
-            if (this.Root != null && this.IsEnterTree)
+            if (Root != null && IsEnterTree)
             {
-                var parent = this.GetParent<Control>();
+                Control parent = GetParent<Control>();
                 if (parent != null)
                 {
-                    _screenPosition = this._Position.CalculateSize(parent.ScreenPosition, true);
-                    _screenSize = this._Size.CalculateSize(parent.ScreenSize);
+                    _screenPosition = _Position.CalculateSize(parent.ScreenPosition, true);
+                    _screenSize = _Size.CalculateSize(parent.ScreenSize);
                 }
-                else if (this.Viewport != null)
+                else if (Viewport != null)
                 {
-                    _screenPosition = this._Position.CalculateSize(this.Viewport.Position, true);
-                    _screenSize = this._Size.CalculateSize(this.Viewport.Size);
+                    _screenPosition = _Position.CalculateSize(Viewport.Position, true);
+                    _screenSize = _Size.CalculateSize(Viewport.Size);
                 }
             }
 
-            this.UpdateCanvas();
+            UpdateCanvas();
         }
 
         public virtual void UpdateSizes()
         {
-            if (this.Root != null && this.IsEnterTree)
+            if (Root != null && IsEnterTree)
             {
-                this.UpdateSize();
+                UpdateSize();
 
-                foreach (var child in GetChilds<Control>())
+                foreach (Control child in GetChilds<Control>())
                 {
                     child.UpdateSizes();
                 }
@@ -139,16 +132,16 @@ namespace Striked3D.Nodes
 
         public virtual void OnInput(InputEvent ev)
         {
-            if(ev is MouseInputEvent)
+            if (ev is MouseInputEvent)
             {
-                var cursorPos = (ev as MouseInputEvent).Position;
+                Vector2D<float> cursorPos = (ev as MouseInputEvent).Position;
 
-                if(cursorPos.X >= this.ScreenPosition.X
-                    && cursorPos.X <= this.ScreenPostionEnd.X 
-                    && cursorPos.Y >= this.ScreenPosition.Y
-                    && cursorPos.Y <= this.ScreenPostionEnd.Y)
+                if (cursorPos.X >= ScreenPosition.X
+                    && cursorPos.X <= ScreenPostionEnd.X
+                    && cursorPos.Y >= ScreenPosition.Y
+                    && cursorPos.Y <= ScreenPostionEnd.Y)
                 {
-                    if(_isHover != true)
+                    if (_isHover != true)
                     {
                         OnHover?.Invoke();
                     }
@@ -164,18 +157,18 @@ namespace Striked3D.Nodes
                 }
             }
 
-            if(ev is MouseButtonEvent)
+            if (ev is MouseButtonEvent)
             {
-                var button = (ev as MouseButtonEvent);
-                if(button.Button == Silk.NET.Input.MouseButton.Left && isHover && button.IsUp)
+                MouseButtonEvent button = (ev as MouseButtonEvent);
+                if (button.Button == Silk.NET.Input.MouseButton.Left && isHover && button.IsUp)
                 {
                     OnClick?.Invoke();
-                    
+
                     if (_isFocused != true)
                     {
                         OnFocus?.Invoke();
                     }
-                    this._isFocused = true;
+                    _isFocused = true;
                 }
                 else
                 {
@@ -183,7 +176,7 @@ namespace Striked3D.Nodes
                     {
                         OnFocusLeave?.Invoke();
                     }
-                    this._isFocused = false;
+                    _isFocused = false;
                 }
             }
         }

@@ -1,14 +1,11 @@
-﻿
-using Veldrid;
-using Striked3D.Resources;
-using Silk.NET.Maths;
+﻿using Silk.NET.Maths;
+using Striked3D.Core;
 using Striked3D.Core.Input;
 using System;
-using Striked3D.Core;
 
 namespace Striked3D.Nodes
 {
-  
+
     public class Camera3D : Node3D, ICamera, IInputable
     {
         private float _fov = 45f;
@@ -21,7 +18,7 @@ namespace Striked3D.Nodes
         private Vector3D<float> _position = new Vector3D<float>(0, 3, 0);
         private Vector3D<float> _lookDirection = new Vector3D<float>(0, -3f, -1f);
         private float _moveSpeed = 5f;
-        private float _mouseSpeed = 0.003f;
+        private readonly float _mouseSpeed = 0.003f;
 
         public Matrix4X4<float> ViewMatrix => _viewMatrix;
         public Matrix4X4<float> ProjectionMatrix => _projectionMatrix;
@@ -45,8 +42,8 @@ namespace Striked3D.Nodes
         public override void OnEnterTree()
         {
             base.OnEnterTree();
-            this.UpdateTransform();
-            service = this.Root.Services.Get<InputService>();
+            UpdateTransform();
+            service = Root.Services.Get<InputService>();
         }
 
         private float DegreesToRadians(float degrees)
@@ -94,12 +91,12 @@ namespace Striked3D.Nodes
             {
                 Quaternion<float> lookRotation = Quaternion<float>.CreateFromYawPitchRoll(Yaw, Pitch, 0f);
                 motionDir = Vector3D.Transform<float>(motionDir, lookRotation);
-                _position += motionDir * MoveSpeed * sprintFactor * (float) delta;
+                _position += motionDir * MoveSpeed * sprintFactor * (float)delta;
 
                 UpdateTransform();
             }
 
-            if(Viewport.IsMouseInside() && service.IseMouseButtonPressed(Silk.NET.Input.MouseButton.Right) && !activated)
+            if (Viewport.IsMouseInside() && service.IseMouseButtonPressed(Silk.NET.Input.MouseButton.Right) && !activated)
             {
                 activated = true;
                 _previousMousePos = service.GetMousePosition();
@@ -108,17 +105,17 @@ namespace Striked3D.Nodes
             }
             else if (activated && service.IseMouseButtonPressed(Silk.NET.Input.MouseButton.Right))
             {
-                var mousePos = service.GetMousePosition();
+                Vector2D<float> mousePos = service.GetMousePosition();
                 Vector2D<float> mouseDelta = mousePos - _previousMousePos;
                 _previousMousePos = mousePos;
 
-                Yaw += -mouseDelta.X * _mouseSpeed ;
-                Pitch += -mouseDelta.Y * _mouseSpeed ;
+                Yaw += -mouseDelta.X * _mouseSpeed;
+                Pitch += -mouseDelta.Y * _mouseSpeed;
                 Pitch = Clamp(Pitch, -1.55f, 1.55f);
 
                 UpdateTransform();
             }
-            else if(activated)
+            else if (activated)
             {
                 activated = false;
                 service.SetMousePosition(mousePositionBeforeActivate);
@@ -131,25 +128,21 @@ namespace Striked3D.Nodes
 
         public void UpdateTransform()
         {
-            var lookRotation = Quaternion<float>.CreateFromYawPitchRoll(Yaw, Pitch, 0f);
+            Quaternion<float> lookRotation = Quaternion<float>.CreateFromYawPitchRoll(Yaw, Pitch, 0f);
             Vector3D<float> lookDir = Vector3D.Transform(-Vector3D<float>.UnitZ, lookRotation);
 
             _lookDirection = lookDir;
             _viewMatrix = Matrix4X4.CreateLookAt<float>(_position, _position + _lookDirection, Vector3D<float>.UnitY);
-            if(Viewport.Size.Y > 0)
+            if (Viewport.Size.Y > 0)
+            {
                 _projectionMatrix = Matrix4X4.CreatePerspectiveFieldOfView<float>(DegreesToRadians(FieldOfView), Viewport.Size.X / Viewport.Size.Y, _near, _far);
+            }
         }
 
-        public bool IsActive 
-        { 
-            get
-            {
-                return (this.Viewport.ActiveCamera != null && this.Viewport.ActiveCamera.Id == this.Id);
-            } 
-            set
-            {
-                this.Viewport.ActiveCamera = this;
-            }
+        public bool IsActive
+        {
+            get => (Viewport.ActiveCamera != null && Viewport.ActiveCamera.Id == Id);
+            set => Viewport.ActiveCamera = this;
         }
 
         private float Clamp(float value, float min, float max)
@@ -186,17 +179,17 @@ namespace Striked3D.Nodes
         {
             if (e is MouseInputWheelEvent)
             {
-                var ev = e as MouseInputWheelEvent;
+                MouseInputWheelEvent ev = e as MouseInputWheelEvent;
                 if (ev.Position.Y >= 1)
                 {
-                    this.MoveSpeed = Clamp(this.MoveSpeed * 1.1f, 0.01f, 100f);
+                    MoveSpeed = Clamp(MoveSpeed * 1.1f, 0.01f, 100f);
                 }
                 else if (ev.Position.Y <= -1)
                 {
-                    this.MoveSpeed = Clamp(this.MoveSpeed / 1.1f, 0.01f, 100f);
+                    MoveSpeed = Clamp(MoveSpeed / 1.1f, 0.01f, 100f);
                 }
             }
         }
     }
-    
+
 }

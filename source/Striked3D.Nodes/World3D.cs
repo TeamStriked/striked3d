@@ -1,6 +1,4 @@
-﻿using Silk.NET.Maths;
-using Striked3D.Resources;
-using Veldrid;
+﻿using Veldrid;
 
 namespace Striked3D.Core.Graphics
 {
@@ -13,12 +11,12 @@ namespace Striked3D.Core.Graphics
 
         public override void Update(IRenderer renderer, IViewport viewport)
         {
-            if (!this.isInit)
+            if (!isInit)
             {
-                this.Create(renderer);
+                Create(renderer);
             }
 
-            var currentCamInfo = viewport.ActiveCamera.CameraInfo;
+            CameraInfo currentCamInfo = viewport.ActiveCamera.CameraInfo;
             if (!prevCamInfo.Equals(currentCamInfo))
             {
                 renderer.UpdateBuffer(CameraBuffer, 0, currentCamInfo);
@@ -38,7 +36,7 @@ namespace Striked3D.Core.Graphics
             ResourceSetDescription resourceSetDescription = new ResourceSetDescription(renderer.Material3DLayout, CameraBuffer);
             _resourceSet = renderer.CreateResourceSet(resourceSetDescription);
 
-            this.isInit = true;
+            isInit = true;
         }
 
         public override void Dispose()

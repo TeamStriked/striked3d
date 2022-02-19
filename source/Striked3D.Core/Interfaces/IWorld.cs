@@ -1,8 +1,4 @@
-﻿using Silk.NET.Maths;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Veldrid;
+﻿using Veldrid;
 
 namespace Striked3D.Core
 {

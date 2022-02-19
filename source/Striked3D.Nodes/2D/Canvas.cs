@@ -12,7 +12,7 @@ namespace Striked3D.Nodes
 
     public abstract class Canvas : Node2D, IDrawable2D
     {
-        private List<Material2DInfo> matInfoArray = new List<Material2DInfo>();
+        private readonly List<Material2DInfo> matInfoArray = new List<Material2DInfo>();
 
         public Material2D Material { get; set; }
 
@@ -26,7 +26,7 @@ namespace Striked3D.Nodes
         public override void OnEnterTree()
         {
             base.OnEnterTree();
-            this.UpdateCanvas();
+            UpdateCanvas();
         }
 
         public void UpdateCanvas()
@@ -51,27 +51,31 @@ namespace Striked3D.Nodes
 
             font.AddChars(text);
 
-            var atlas = font.Atlas;
+            FontAtlas atlas = font.Atlas;
 
             if (atlas.bitmap == null)
+            {
                 return;
+            }
 
-            var xPos = _position.X;
-            var scale = (fontSize / Font.renderSize);
-            var size = Font.renderSize * scale;
+            float xPos = _position.X;
+            float scale = (fontSize / Font.renderSize);
+            float size = Font.renderSize * scale;
 
-            foreach (var c in text)
+            foreach (char c in text)
             {
                 if (!atlas.chars.ContainsKey(c))
+                {
                     continue;
+                }
 
-                var cacheChar = atlas.chars[c];
+                FontAtlasGylph cacheChar = atlas.chars[c];
 
-                var fromX = cacheChar.region.X;
-                var fromY = cacheChar.region.Y;
+                float fromX = cacheChar.region.X;
+                float fromY = cacheChar.region.Y;
 
-                var toT = (cacheChar.region.X + Font.renderSize);
-                var toY = (cacheChar.region.Y + Font.renderSize);
+                float toT = (cacheChar.region.X + Font.renderSize);
+                float toY = (cacheChar.region.Y + Font.renderSize);
 
                 matInfoArray.Add(new Material2DInfo
                 {
@@ -89,11 +93,11 @@ namespace Striked3D.Nodes
 
         public void DrawRectBorder(RgbaFloat _color, Vector2D<float> _position, Vector2D<float> _endPosition, float thickness)
         {
-            var leftPos1 = _position;
-            var leftPos2 = _position;
+            Vector2D<float> leftPos1 = _position;
+            Vector2D<float> leftPos2 = _position;
             leftPos2.X = _endPosition.X;
 
-            this.DrawLine(_color, leftPos1, leftPos2, thickness);
+            DrawLine(_color, leftPos1, leftPos2, thickness);
 
             leftPos1 = _position;
             leftPos1.Y = _endPosition.Y - (thickness / 2);
@@ -101,7 +105,7 @@ namespace Striked3D.Nodes
             leftPos2.X = _endPosition.X;
             leftPos2.Y = _endPosition.Y - (thickness / 2);
 
-            this.DrawLine(_color, leftPos1, leftPos2, thickness);
+            DrawLine(_color, leftPos1, leftPos2, thickness);
 
             leftPos1 = _position;
             leftPos1.X += (thickness / 2);
@@ -109,7 +113,7 @@ namespace Striked3D.Nodes
             leftPos2.Y = _endPosition.Y;
             leftPos2.X += (thickness / 2);
 
-            this.DrawLine(_color, leftPos1, leftPos2, thickness);
+            DrawLine(_color, leftPos1, leftPos2, thickness);
 
             leftPos1 = _position;
             leftPos1.X = _endPosition.X;
@@ -119,7 +123,7 @@ namespace Striked3D.Nodes
             leftPos2.Y = _endPosition.Y;
             leftPos2.X -= (thickness / 2);
 
-            this.DrawLine(_color, leftPos1, leftPos2, thickness);
+            DrawLine(_color, leftPos1, leftPos2, thickness);
         }
 
         public void DrawLine(RgbaFloat _color, Vector2D<float> _position, Vector2D<float> _endPosition, float thickness)
@@ -134,7 +138,7 @@ namespace Striked3D.Nodes
 
         public virtual void OnDraw2D(IRenderer renderer)
         {
-            var mat = (Material == null) ? renderer.Default2DMaterial : Material;
+            IMaterial mat = (Material == null) ? renderer.Default2DMaterial : Material;
             if (mat != null && !mat.isDirty)
             {
                 if (matInfoArray.Count > 0)
@@ -148,7 +152,7 @@ namespace Striked3D.Nodes
 
                     renderer.BindBuffers(null, renderer.indexDefaultBuffer);
 
-                    foreach (var info in matInfoArray)
+                    foreach (Material2DInfo info in matInfoArray)
                     {
                         renderer.PushConstant(info);
                         renderer.DrawIndexInstanced(6);
@@ -164,25 +168,25 @@ namespace Striked3D.Nodes
 
         private void CreateBuffers(IRenderer renderer)
         {
-            this.ClearCanvas();
-            this.DrawCanvas();
+            ClearCanvas();
+            DrawCanvas();
         }
 
         public virtual void BeforeDraw(IRenderer renderer)
         {
             if (needsToBeRecreate)
             {
-                this.Material?.BeforeDraw(renderer);
-                this.CreateBuffers(renderer);
+                Material?.BeforeDraw(renderer);
+                CreateBuffers(renderer);
 
-                this.needsToBeRecreate = false;
+                needsToBeRecreate = false;
             }
         }
 
         public override void Dispose()
         {
             base.Dispose();
-            this.ClearCanvas();
+            ClearCanvas();
         }
     }
 }

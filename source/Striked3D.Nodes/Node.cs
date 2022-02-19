@@ -1,11 +1,6 @@
 ﻿using Striked3D.Core;
 using Striked3D.Core.Window;
-using Striked3D.Nodes;
 using Striked3D.Services;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Text;
 
 namespace Striked3D.Nodes
 {
@@ -13,8 +8,8 @@ namespace Striked3D.Nodes
     {
         public IWindow Root { get; set; }
 
-        private string _Name = null;
-        public string Name { get { return (_Name == null) ? this.GetType().Name : _Name; } }
+        private readonly string _Name = null;
+        public string Name => (_Name == null) ? GetType().Name : _Name;
 
         public delegate void OnEnterTreeHandler();
         public event OnEnterTreeHandler OnNodeEnterTree;
@@ -35,7 +30,7 @@ namespace Striked3D.Nodes
             {
                 if (resetCache || _viewPort == null)
                 {
-                    _viewPort = Root.Services.Get<ScreneTreeService>().GetViewport(this.Id);
+                    _viewPort = Root.Services.Get<ScreneTreeService>().GetViewport(Id);
                     resetCache = false;
                 }
 
@@ -45,13 +40,13 @@ namespace Striked3D.Nodes
 
         public T GetParent<T>() where T : Node
         {
-            var service =  Root.Services.Get<ScreneTreeService>();
-            return service.GetParent<T>(this.Id);
+            ScreneTreeService service = Root.Services.Get<ScreneTreeService>();
+            return service.GetParent<T>(Id);
         }
 
         public virtual T CreateChild<T>() where T : Node
         {
-            var node = Root.Services.Get<ScreneTreeService>().CreateNode<T>(this.Id);
+            T node = Root.Services.Get<ScreneTreeService>().CreateNode<T>(Id);
             node.OnEnterTree();
             node.OnEnterTreeReady();
 
@@ -59,7 +54,7 @@ namespace Striked3D.Nodes
         }
         public virtual void AddChild(INode t)
         {
-            Root.Services.Get<ScreneTreeService>().AddNode(t, this.Id);
+            Root.Services.Get<ScreneTreeService>().AddNode(t, Id);
             t.OnEnterTree();
             t.OnEnterTreeReady();
         }
@@ -72,12 +67,12 @@ namespace Striked3D.Nodes
 
         public INode[] GetChilds()
         {
-            return Root.Services.Get<ScreneTreeService>().GetChilds(this.Id);
+            return Root.Services.Get<ScreneTreeService>().GetChilds(Id);
         }
 
-        public T[] GetChilds<T>() where T :Node
+        public T[] GetChilds<T>() where T : Node
         {
-            return Root.Services.Get<ScreneTreeService>().GetChilds<T>(this.Id);
+            return Root.Services.Get<ScreneTreeService>().GetChilds<T>(Id);
         }
 
         public Node()
@@ -90,7 +85,7 @@ namespace Striked3D.Nodes
 
         public virtual void OnEnterTree()
         {
-            this.IsEnterTree = true;
+            IsEnterTree = true;
             OnNodeEnterTree?.Invoke();
         }
         public virtual void OnLeaveTree()
@@ -105,16 +100,16 @@ namespace Striked3D.Nodes
 
         public virtual void FreeQueue()
         {
-             Root.Services.Get<ScreneTreeService>().SetFreeQueue(this.Id);
+            Root.Services.Get<ScreneTreeService>().SetFreeQueue(Id);
         }
 
         public override void Dispose()
         {
             base.Dispose();
 
-            foreach (var child in this.GetChilds())
+            foreach (INode child in GetChilds())
             {
-                this.RemoveChild(child);
+                RemoveChild(child);
             }
         }
     }

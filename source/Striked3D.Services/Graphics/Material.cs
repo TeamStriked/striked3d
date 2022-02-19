@@ -1,13 +1,6 @@
 ﻿using Striked3D.Core;
-using Striked3D.Core.Graphics;
 using Striked3D.Core.Pipeline;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using Veldrid;
-using Veldrid.SPIRV;
-using PipelineVeldrid = Veldrid.Pipeline;
 
 namespace Striked3D.Resources
 {
@@ -15,34 +8,28 @@ namespace Striked3D.Resources
     {
         public abstract string VertexCode { get; }
         public abstract void BeforeDraw(IRenderer renderer);
-        public abstract string FragmentCode { get;  }
+        public abstract string FragmentCode { get; }
 
-        protected PipelineBuilder builder = new ();
+        protected PipelineBuilder builder = new();
         protected bool _isDirty = true;
 
         public bool isDirty => _isDirty;
 
-        public Pipeline Pipeline
-        {
-            get
-            {
-                return this.builder?.Pipeline;
-            }
-        }
+        public Pipeline Pipeline => builder?.Pipeline;
 
         public Material()
         {
-            this.cullMode = FaceCullMode.Back;
-            this.constantSize = 0;
-            this.frontFace = FrontFace.Clockwise;
-            this.mode = PrimitiveTopology.TriangleStrip;
-            this.depthStencilComparsion = ComparisonKind.LessEqual;
-            this.blendState = BlendStateDescription.SingleOverrideBlend;
+            cullMode = FaceCullMode.Back;
+            constantSize = 0;
+            frontFace = FrontFace.Clockwise;
+            mode = PrimitiveTopology.TriangleStrip;
+            depthStencilComparsion = ComparisonKind.LessEqual;
+            blendState = BlendStateDescription.SingleOverrideBlend;
 
-            this.scissorTestEnabled = false;
-            this.depthClip = true;
-            this. testEnabled = true;
-            this.writeEnable = true;
+            scissorTestEnabled = false;
+            depthClip = true;
+            testEnabled = true;
+            writeEnable = true;
         }
 
         public FaceCullMode cullMode { get; set; }

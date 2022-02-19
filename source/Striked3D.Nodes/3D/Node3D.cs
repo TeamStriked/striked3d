@@ -1,9 +1,5 @@
 ﻿using Striked3D.Core;
 using Striked3D.Resources;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Veldrid;
 
 namespace Striked3D.Nodes
 {
@@ -14,8 +10,8 @@ namespace Striked3D.Nodes
         [Export]
         public Transform3D Transform
         {
-            get { return _transform; }
-            set { _transform = value; }
+            get => _transform;
+            set => _transform = value;
         }
     }
 }

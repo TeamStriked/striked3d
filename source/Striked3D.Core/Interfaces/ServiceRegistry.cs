@@ -6,22 +6,16 @@ namespace Striked3D.Core
 {
     public class ServiceRegistry
     {
-        private readonly Dictionary<Type, IService> _registeredServices = new ();       
-        
-        public IService[] All
-        {
-            get
-            {
-                return this._registeredServices.Values.ToArray();
-            }
-        }
+        private readonly Dictionary<Type, IService> _registeredServices = new();
+
+        public IService[] All => _registeredServices.Values.ToArray();
 
         /// <inheritdoc />
         public T Register<T>() where T : class, IService
         {
             lock (_registeredServices)
             {
-                var newService = Activator.CreateInstance<T>();
+                T newService = Activator.CreateInstance<T>();
                 _registeredServices.Add(typeof(T), newService);
 
                 return newService;
@@ -47,7 +41,7 @@ namespace Striked3D.Core
                 return null;
             }
 
-            return (T) service ;
+            return (T)service;
         }
     }
 }

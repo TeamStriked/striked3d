@@ -21,10 +21,10 @@ namespace Striked3D.Utils
                 .ToList();
         }
 
- 
+
         public static IEnumerable<IEnumerable<T>> Split<T>(this T[] array, int size)
         {
-            for (var i = 0; i < (float)array.Length / size; i++)
+            for (int i = 0; i < (float)array.Length / size; i++)
             {
                 yield return array.Skip(i * size).Take(size);
             }
@@ -32,7 +32,7 @@ namespace Striked3D.Utils
 
         public static IEnumerable<IEnumerable<T>> Split<T>(this IEnumerable<T> source, int size)
         {
-            var count = source.Count();
+            int count = source.Count();
             for (int i = 0; i < count; i += size)
             {
                 yield return source
@@ -43,11 +43,11 @@ namespace Striked3D.Utils
         public static IEnumerable<IEnumerable<T>> Chunkify<T>(this IEnumerable<T> source, int size)
         {
             int count = 0;
-            using (var iter = source.GetEnumerator())
+            using (IEnumerator<T> iter = source.GetEnumerator())
             {
                 while (iter.MoveNext())
                 {
-                    var chunk = new T[size];
+                    T[] chunk = new T[size];
                     count = 1;
                     chunk[0] = iter.Current;
                     for (int i = 1; i < size && iter.MoveNext(); i++)

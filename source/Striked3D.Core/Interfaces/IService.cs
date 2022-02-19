@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Striked3D.Core
+﻿namespace Striked3D.Core
 {
-    public interface IService 
+    public interface IService
     {
         public void Update(double delta);
         public void Render(double delta);
