@@ -1,19 +1,17 @@
-﻿using System;
+﻿using BinaryPack.Attributes;
+using BinaryPack.Enums;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace Striked3D.Core
 {
+    [BinarySerialization(SerializationMode.Properties | SerializationMode.NonPublicMembers)]
     public abstract class Object : IObject, INotifyPropertyChanged
     {
-
-
         private Guid id = Guid.NewGuid();
-        public Guid Id => id;
 
-        public Object()
-        {
-        }
+        public virtual Guid Id { get { return id; } set { id = value; } }
 
         public virtual void Dispose()
         {

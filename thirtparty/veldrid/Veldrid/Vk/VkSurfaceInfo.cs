@@ -1,8 +1,5 @@
 ﻿using System;
-using Vulkan;
-using Vulkan.Xlib;
-using static Veldrid.Vk.VulkanUtil;
-using static Vulkan.VulkanNative;
+using Veldrid.Vk.Xlib;
 
 namespace Veldrid.Vk
 {
@@ -18,7 +15,7 @@ namespace Veldrid.Vk
         /// </summary>
         /// <param name="instance">The VkInstance to use.</param>
         /// <returns>A new VkSurfaceKHR.</returns>
-        public abstract VkSurfaceKHR CreateSurface(VkInstance instance);
+        public abstract Silk.NET.Vulkan.SurfaceKHR CreateSurface(Silk.NET.Vulkan.Instance instance);
 
         /// <summary>
         /// Creates a new <see cref="VkSurfaceSource"/> from the given Win32 instance and window handle.
@@ -49,7 +46,7 @@ namespace Veldrid.Vk
             _hwnd = hwnd;
         }
 
-        public unsafe override VkSurfaceKHR CreateSurface(VkInstance instance)
+        public unsafe override Silk.NET.Vulkan.SurfaceKHR CreateSurface(Silk.NET.Vulkan.Instance instance)
         {
             return VkSurfaceUtil.CreateSurface(null, instance, GetSurfaceSource());
         }
@@ -71,7 +68,7 @@ namespace Veldrid.Vk
             _window = window;
         }
 
-        public unsafe override VkSurfaceKHR CreateSurface(VkInstance instance)
+        public unsafe override Silk.NET.Vulkan.SurfaceKHR CreateSurface(Silk.NET.Vulkan.Instance instance)
         {
             return VkSurfaceUtil.CreateSurface(null, instance, GetSurfaceSource());
         }

@@ -1,36 +1,32 @@
 ﻿using System;
-using Vulkan;
-using static Vulkan.VulkanNative;
 using static Veldrid.Vk.VulkanUtil;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Text;
 
-using static Vulkan.RawConstants;
-
 namespace Veldrid.Vk
 {
     internal unsafe class VkCommandList : CommandList
     {
         private readonly VkGraphicsDevice _gd;
-        private VkCommandPool _pool;
-        private VkCommandBuffer _cb;
+        private Silk.NET.Vulkan.CommandPool _pool;
+        private Silk.NET.Vulkan.CommandBuffer _cb;
         private bool _destroyed;
 
         private bool _commandBufferBegun;
         private bool _commandBufferEnded;
-        private VkRect2D[] _scissorRects = Array.Empty<VkRect2D>();
+        private Silk.NET.Vulkan.Rect2D[] _scissorRects = Array.Empty<Silk.NET.Vulkan.Rect2D>();
 
-        private VkClearValue[] _clearValues = Array.Empty<VkClearValue>();
+        private Silk.NET.Vulkan.ClearValue[] _clearValues = Array.Empty<Silk.NET.Vulkan.ClearValue>();
         private bool[] _validColorClearValues = Array.Empty<bool>();
-        private VkClearValue? _depthClearValue;
+        private Silk.NET.Vulkan.ClearValue? _depthClearValue;
         private readonly List<VkTexture> _preDrawSampledImages = new List<VkTexture>();
 
         // Graphics State
         private VkFramebufferBase _currentFramebuffer;
         private bool _currentFramebufferEverActive;
-        private VkRenderPass _activeRenderPass;
+        private Silk.NET.Vulkan.RenderPass _activeRenderPass;
         private VkPipeline _currentGraphicsPipeline;
         private BoundResourceSetInfo[] _currentGraphicsResourceSets = Array.Empty<BoundResourceSetInfo>();
         private bool[] _graphicsResourceSetsChanged;
@@ -44,59 +40,67 @@ namespace Veldrid.Vk
         private string _name;
 
         private readonly object _commandBufferListLock = new object();
-        private readonly Queue<VkCommandBuffer> _availableCommandBuffers = new Queue<VkCommandBuffer>();
-        private readonly List<VkCommandBuffer> _submittedCommandBuffers = new List<VkCommandBuffer>();
+        private readonly Queue<Silk.NET.Vulkan.CommandBuffer> _availableCommandBuffers = new Queue<Silk.NET.Vulkan.CommandBuffer>();
+        private readonly List<Silk.NET.Vulkan.CommandBuffer> _submittedCommandBuffers = new List<Silk.NET.Vulkan.CommandBuffer>();
 
         private StagingResourceInfo _currentStagingInfo;
         private readonly object _stagingLock = new object();
-        private readonly Dictionary<VkCommandBuffer, StagingResourceInfo> _submittedStagingInfos = new Dictionary<VkCommandBuffer, StagingResourceInfo>();
+        private readonly Dictionary<Silk.NET.Vulkan.CommandBuffer, StagingResourceInfo> _submittedStagingInfos = new Dictionary<Silk.NET.Vulkan.CommandBuffer, StagingResourceInfo>();
         private readonly List<StagingResourceInfo> _availableStagingInfos = new List<StagingResourceInfo>();
         private readonly List<VkBuffer> _availableStagingBuffers = new List<VkBuffer>();
 
-        public VkCommandPool CommandPool => _pool;
-        public VkCommandBuffer CommandBuffer => _cb;
+        public Silk.NET.Vulkan.CommandPool CommandPool => _pool;
+        public Silk.NET.Vulkan.CommandBuffer CommandBuffer => _cb;
 
         public ResourceRefCount RefCount { get; }
 
         public override bool IsDisposed => _destroyed;
 
-        public VkCommandList(VkGraphicsDevice gd, ref CommandListDescription description)
+        private readonly Silk.NET.Vulkan.Vk _vk;
+
+        public VkCommandList( VkGraphicsDevice gd, ref CommandListDescription description)
             : base(ref description, gd.Features, gd.UniformBufferMinOffsetAlignment, gd.StructuredBufferMinOffsetAlignment)
         {
             _gd = gd;
-            VkCommandPoolCreateInfo poolCI = VkCommandPoolCreateInfo.New();
-            poolCI.flags = VkCommandPoolCreateFlags.ResetCommandBuffer;
-            poolCI.queueFamilyIndex = gd.GraphicsQueueIndex;
-            VkResult result = vkCreateCommandPool(_gd.Device, ref poolCI, null, out _pool);
+            _vk = gd.vk;
+
+            var poolCI = new Silk.NET.Vulkan.CommandPoolCreateInfo();
+            poolCI.SType = Silk.NET.Vulkan.StructureType.CommandPoolCreateInfo;
+            poolCI.Flags = Silk.NET.Vulkan.CommandPoolCreateFlags.CommandPoolCreateResetCommandBufferBit;
+            poolCI.QueueFamilyIndex = gd.GraphicsQueueIndex;
+            var result = _vk.CreateCommandPool(_gd.Device, &poolCI, null, out _pool);
             CheckResult(result);
+
+            isDeclaredAsSubpass = description.isSubpass;
 
             _cb = GetNextCommandBuffer();
             RefCount = new ResourceRefCount(DisposeCore);
         }
 
-        private VkCommandBuffer GetNextCommandBuffer()
+        private Silk.NET.Vulkan.CommandBuffer GetNextCommandBuffer()
         {
             lock (_commandBufferListLock)
             {
                 if (_availableCommandBuffers.Count > 0)
                 {
-                    VkCommandBuffer cachedCB = _availableCommandBuffers.Dequeue();
-                    VkResult resetResult = vkResetCommandBuffer(cachedCB, VkCommandBufferResetFlags.None);
+                    Silk.NET.Vulkan.CommandBuffer cachedCB = _availableCommandBuffers.Dequeue();
+                    var resetResult = _vk.ResetCommandBuffer(cachedCB, 0);
                     CheckResult(resetResult);
                     return cachedCB;
                 }
             }
 
-            VkCommandBufferAllocateInfo cbAI = VkCommandBufferAllocateInfo.New();
-            cbAI.commandPool = _pool;
-            cbAI.commandBufferCount = 1;
-            cbAI.level = VkCommandBufferLevel.Primary;
-            VkResult result = vkAllocateCommandBuffers(_gd.Device, ref cbAI, out VkCommandBuffer cb);
+            var cbAI = new Silk.NET.Vulkan.CommandBufferAllocateInfo();
+            cbAI.SType = Silk.NET.Vulkan.StructureType.CommandBufferAllocateInfo;
+            cbAI.CommandPool = _pool;
+            cbAI.CommandBufferCount = 1;
+            cbAI.Level = isDeclaredAsSubpass ? Silk.NET.Vulkan.CommandBufferLevel.Secondary : Silk.NET.Vulkan.CommandBufferLevel.Primary;
+            var result = _vk.AllocateCommandBuffers(_gd.Device,&cbAI, out Silk.NET.Vulkan.CommandBuffer cb);
             CheckResult(result);
             return cb;
         }
 
-        public void CommandBufferSubmitted(VkCommandBuffer cb)
+        public void CommandBufferSubmitted(Silk.NET.Vulkan.CommandBuffer cb)
         {
             RefCount.Increment();
             foreach (ResourceRefCount rrc in _currentStagingInfo.Resources)
@@ -106,20 +110,38 @@ namespace Veldrid.Vk
 
             _submittedStagingInfos.Add(cb, _currentStagingInfo);
             _currentStagingInfo = null;
+
+            if (this.submitCommands != null)
+            {
+                foreach (var command in submitCommands)
+                {
+                    (command as VkCommandList).CommandBufferSubmitted((command as VkCommandList).CommandBuffer);
+                }
+            }
         }
 
-        public void CommandBufferCompleted(VkCommandBuffer completedCB)
+        public void CommandBufferCompleted(Silk.NET.Vulkan.CommandBuffer completedCB)
         {
-
             lock (_commandBufferListLock)
             {
                 for (int i = 0; i < _submittedCommandBuffers.Count; i++)
                 {
-                    VkCommandBuffer submittedCB = _submittedCommandBuffers[i];
-                    if (submittedCB == completedCB)
+                    Silk.NET.Vulkan.CommandBuffer submittedCB = _submittedCommandBuffers[i];
+                    if (submittedCB.Handle == completedCB.Handle)
                     {
                         _availableCommandBuffers.Enqueue(completedCB);
                         _submittedCommandBuffers.RemoveAt(i);
+
+                        if(submitCommands != null)
+                        {
+                            foreach(VkCommandList pass in submitCommands)
+                            {
+                                var getSubmittedBuffer = pass._submittedCommandBuffers[i];
+                                pass.CommandBufferCompleted(getSubmittedBuffer);
+                            }
+                        }
+
+
                         i -= 1;
                     }
                 }
@@ -136,66 +158,33 @@ namespace Veldrid.Vk
 
             RefCount.Decrement();
         }
-
-        public override void Begin()
-        {
-            if (_commandBufferBegun)
-            {
-                throw new VeldridException(
-                    "CommandList must be in its initial state, or End() must have been called, for Begin() to be valid to call.");
-            }
-            if (_commandBufferEnded)
-            {
-                _commandBufferEnded = false;
-                _cb = GetNextCommandBuffer();
-                if (_currentStagingInfo != null)
-                {
-                    RecycleStagingInfo(_currentStagingInfo);
-                }
-            }
-
-            _currentStagingInfo = GetStagingResourceInfo();
-
-            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.New();
-            beginInfo.flags = VkCommandBufferUsageFlags.OneTimeSubmit;
-            vkBeginCommandBuffer(_cb, ref beginInfo);
-            _commandBufferBegun = true;
-
-            ClearCachedState();
-            _currentFramebuffer = null;
-            _currentGraphicsPipeline = null;
-            ClearSets(_currentGraphicsResourceSets);
-            Util.ClearArray(_scissorRects);
-
-            _currentComputePipeline = null;
-            ClearSets(_currentComputeResourceSets);
-        }
-
+   
         private protected override void ClearColorTargetCore(uint index, RgbaFloat clearColor)
         {
-            VkClearValue clearValue = new VkClearValue
+            var clearValue = new Silk.NET.Vulkan.ClearValue
             {
-                color = new VkClearColorValue(clearColor.R, clearColor.G, clearColor.B, clearColor.A)
+                Color = new  Silk.NET.Vulkan.ClearColorValue(clearColor.R, clearColor.G, clearColor.B, clearColor.A)
             };
 
-            if (_activeRenderPass != VkRenderPass.Null)
+            if (_activeRenderPass.Handle != default)
             {
-                VkClearAttachment clearAttachment = new VkClearAttachment
+                var clearAttachment = new Silk.NET.Vulkan.ClearAttachment
                 {
-                    colorAttachment = index,
-                    aspectMask = VkImageAspectFlags.Color,
-                    clearValue = clearValue
+                    ColorAttachment = index,
+                    AspectMask = Silk.NET.Vulkan.ImageAspectFlags.ImageAspectColorBit,
+                    ClearValue = clearValue
                 };
 
                 Texture colorTex = _currentFramebuffer.ColorTargets[(int)index].Target;
-                VkClearRect clearRect = new VkClearRect
+                var clearRect = new Silk.NET.Vulkan.ClearRect
                 {
-                    baseArrayLayer = 0,
-                    layerCount = 1,
-                    rect = new VkRect2D(0, 0, colorTex.Width, colorTex.Height)
+                    BaseArrayLayer = 0,
+                    LayerCount = 1,
+                    Rect = new Silk.NET.Vulkan.Rect2D(new Silk.NET.Vulkan.Offset2D(0, 0),
+                           new Silk.NET.Vulkan.Extent2D(colorTex.Width, colorTex.Height))
                 };
 
-                vkCmdClearAttachments(_cb, 1, ref clearAttachment, 1, ref clearRect);
+                _vk.CmdClearAttachments(_cb, 1,  &clearAttachment, 1,  &clearRect);
             }
             else
             {
@@ -207,31 +196,33 @@ namespace Veldrid.Vk
 
         private protected override void ClearDepthStencilCore(float depth, byte stencil)
         {
-            VkClearValue clearValue = new VkClearValue { depthStencil = new VkClearDepthStencilValue(depth, stencil) };
+            var clearValue = new Silk.NET.Vulkan.ClearValue { DepthStencil = new Silk.NET.Vulkan.ClearDepthStencilValue(depth, stencil) };
 
-            if (_activeRenderPass != VkRenderPass.Null)
+            if (_activeRenderPass.Handle != default)
             {
-                VkImageAspectFlags aspect = FormatHelpers.IsStencilFormat(_currentFramebuffer.DepthTarget.Value.Target.Format)
-                    ? VkImageAspectFlags.Depth | VkImageAspectFlags.Stencil
-                    : VkImageAspectFlags.Depth;
-                VkClearAttachment clearAttachment = new VkClearAttachment
+                Silk.NET.Vulkan.ImageAspectFlags aspect = FormatHelpers.IsStencilFormat(_currentFramebuffer.DepthTarget.Value.Target.Format)
+                    ? Silk.NET.Vulkan.ImageAspectFlags.ImageAspectDepthBit | Silk.NET.Vulkan.ImageAspectFlags.ImageAspectStencilBit
+                    : Silk.NET.Vulkan.ImageAspectFlags.ImageAspectDepthBit;
+
+                var clearAttachment = new Silk.NET.Vulkan.ClearAttachment
                 {
-                    aspectMask = aspect,
-                    clearValue = clearValue
+                    AspectMask = aspect,
+                    ClearValue = clearValue
                 };
 
                 uint renderableWidth = _currentFramebuffer.RenderableWidth;
                 uint renderableHeight = _currentFramebuffer.RenderableHeight;
                 if (renderableWidth > 0 && renderableHeight > 0)
                 {
-                    VkClearRect clearRect = new VkClearRect
+                    var clearRect = new Silk.NET.Vulkan.ClearRect
                     {
-                        baseArrayLayer = 0,
-                        layerCount = 1,
-                        rect = new VkRect2D(0, 0, renderableWidth, renderableHeight)
+                        BaseArrayLayer = 0,
+                        LayerCount = 1,
+                        Rect = new Silk.NET.Vulkan.Rect2D(new Silk.NET.Vulkan.Offset2D(0, 0),
+                           new Silk.NET.Vulkan.Extent2D(renderableWidth, renderableHeight))
                     };
 
-                    vkCmdClearAttachments(_cb, 1, ref clearAttachment, 1, ref clearRect);
+                    _vk.CmdClearAttachments(_cb, 1, &clearAttachment, 1, &clearRect);
                 }
             }
             else
@@ -244,13 +235,13 @@ namespace Veldrid.Vk
         private protected override void DrawCore(uint vertexCount, uint instanceCount, uint vertexStart, uint instanceStart)
         {
             PreDrawCommand();
-            vkCmdDraw(_cb, vertexCount, instanceCount, vertexStart, instanceStart);
+            _vk.CmdDraw(_cb, vertexCount, instanceCount, vertexStart, instanceStart);
         }
 
         private protected override void DrawIndexedCore(uint indexCount, uint instanceCount, uint indexStart, int vertexOffset, uint instanceStart)
         {
             PreDrawCommand();
-            vkCmdDrawIndexed(_cb, indexCount, instanceCount, indexStart, vertexOffset, instanceStart);
+            _vk.CmdDrawIndexed(_cb, indexCount, instanceCount, indexStart, vertexOffset, instanceStart);
         }
 
         protected override void DrawIndirectCore(DeviceBuffer indirectBuffer, uint offset, uint drawCount, uint stride)
@@ -258,7 +249,7 @@ namespace Veldrid.Vk
             PreDrawCommand();
             VkBuffer vkBuffer = Util.AssertSubtype<DeviceBuffer, VkBuffer>(indirectBuffer);
             _currentStagingInfo.Resources.Add(vkBuffer.RefCount);
-            vkCmdDrawIndirect(_cb, vkBuffer.DeviceBuffer, offset, drawCount, stride);
+            _vk.CmdDrawIndirect(_cb, vkBuffer.DeviceBuffer, offset, drawCount, stride);
         }
 
         protected override void DrawIndexedIndirectCore(DeviceBuffer indirectBuffer, uint offset, uint drawCount, uint stride)
@@ -266,12 +257,12 @@ namespace Veldrid.Vk
             PreDrawCommand();
             VkBuffer vkBuffer = Util.AssertSubtype<DeviceBuffer, VkBuffer>(indirectBuffer);
             _currentStagingInfo.Resources.Add(vkBuffer.RefCount);
-            vkCmdDrawIndexedIndirect(_cb, vkBuffer.DeviceBuffer, offset, drawCount, stride);
+            _vk.CmdDrawIndexedIndirect(_cb, vkBuffer.DeviceBuffer, offset, drawCount, stride);
         }
 
         private void PreDrawCommand()
         {
-            TransitionImages(_preDrawSampledImages, VkImageLayout.ShaderReadOnlyOptimal);
+            TransitionImages(_preDrawSampledImages, Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal);
             _preDrawSampledImages.Clear();
 
             EnsureRenderPassActive();
@@ -280,7 +271,7 @@ namespace Veldrid.Vk
                 _currentGraphicsResourceSets,
                 _graphicsResourceSetsChanged,
                 _currentGraphicsPipeline.ResourceSetCount,
-                VkPipelineBindPoint.Graphics,
+                Silk.NET.Vulkan.PipelineBindPoint.Graphics,
                 _currentGraphicsPipeline.PipelineLayout);
         }
 
@@ -288,12 +279,12 @@ namespace Veldrid.Vk
             BoundResourceSetInfo[] resourceSets,
             bool[] resourceSetsChanged,
             uint resourceSetCount,
-            VkPipelineBindPoint bindPoint,
-            VkPipelineLayout pipelineLayout)
+            Silk.NET.Vulkan.PipelineBindPoint bindPoint,
+            Silk.NET.Vulkan.PipelineLayout pipelineLayout)
         {
-            VkPipeline pipeline = bindPoint == VkPipelineBindPoint.Graphics ? _currentGraphicsPipeline : _currentComputePipeline;
+            VkPipeline pipeline = bindPoint == Silk.NET.Vulkan.PipelineBindPoint.Graphics ? _currentGraphicsPipeline : _currentComputePipeline;
 
-            VkDescriptorSet* descriptorSets = stackalloc VkDescriptorSet[(int)resourceSetCount];
+            Silk.NET.Vulkan.DescriptorSet* descriptorSets = stackalloc Silk.NET.Vulkan.DescriptorSet[(int)resourceSetCount];
             uint* dynamicOffsets = stackalloc uint[pipeline.DynamicOffsetsCount];
             uint currentBatchCount = 0;
             uint currentBatchFirstSet = 0;
@@ -330,7 +321,7 @@ namespace Veldrid.Vk
                     if (currentBatchCount != 0)
                     {
                         // Flush current batch.
-                        vkCmdBindDescriptorSets(
+                        _vk.CmdBindDescriptorSets(
                             _cb,
                             bindPoint,
                             pipelineLayout,
@@ -347,7 +338,7 @@ namespace Veldrid.Vk
             }
         }
 
-        private void TransitionImages(List<VkTexture> sampledTextures, VkImageLayout layout)
+        private void TransitionImages(List<VkTexture> sampledTextures, Silk.NET.Vulkan.ImageLayout layout)
         {
             for (int i = 0; i < sampledTextures.Count; i++)
             {
@@ -360,7 +351,7 @@ namespace Veldrid.Vk
         {
             PreDispatchCommand();
 
-            vkCmdDispatch(_cb, groupCountX, groupCountY, groupCountZ);
+            _vk.CmdDispatch(_cb, groupCountX, groupCountY, groupCountZ);
         }
 
         private void PreDispatchCommand()
@@ -372,8 +363,8 @@ namespace Veldrid.Vk
                 VkResourceSet vkSet = Util.AssertSubtype<ResourceSet, VkResourceSet>(
                     _currentComputeResourceSets[currentSlot].Set);
 
-                TransitionImages(vkSet.SampledTextures, VkImageLayout.ShaderReadOnlyOptimal);
-                TransitionImages(vkSet.StorageTextures, VkImageLayout.General);
+                TransitionImages(vkSet.SampledTextures, Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal);
+                TransitionImages(vkSet.StorageTextures, Silk.NET.Vulkan.ImageLayout.General);
                 for (int texIdx = 0; texIdx < vkSet.StorageTextures.Count; texIdx++)
                 {
                     VkTexture storageTex = vkSet.StorageTextures[texIdx];
@@ -388,7 +379,7 @@ namespace Veldrid.Vk
                 _currentComputeResourceSets,
                 _computeResourceSetsChanged,
                 _currentComputePipeline.ResourceSetCount,
-                VkPipelineBindPoint.Compute,
+                Silk.NET.Vulkan.PipelineBindPoint.Compute,
                 _currentComputePipeline.PipelineLayout);
         }
 
@@ -398,12 +389,12 @@ namespace Veldrid.Vk
 
             VkBuffer vkBuffer = Util.AssertSubtype<DeviceBuffer, VkBuffer>(indirectBuffer);
             _currentStagingInfo.Resources.Add(vkBuffer.RefCount);
-            vkCmdDispatchIndirect(_cb, vkBuffer.DeviceBuffer, offset);
+            _vk.CmdDispatchIndirect(_cb, vkBuffer.DeviceBuffer, offset);
         }
 
         protected override void ResolveTextureCore(Texture source, Texture destination)
         {
-            if (_activeRenderPass != VkRenderPass.Null)
+            if (_activeRenderPass.Handle != default)
             {
                 EndCurrentRenderPass();
             }
@@ -412,32 +403,182 @@ namespace Veldrid.Vk
             _currentStagingInfo.Resources.Add(vkSource.RefCount);
             VkTexture vkDestination = Util.AssertSubtype<Texture, VkTexture>(destination);
             _currentStagingInfo.Resources.Add(vkDestination.RefCount);
-            VkImageAspectFlags aspectFlags = ((source.Usage & TextureUsage.DepthStencil) == TextureUsage.DepthStencil)
-                ? VkImageAspectFlags.Depth | VkImageAspectFlags.Stencil
-                : VkImageAspectFlags.Color;
-            VkImageResolve region = new VkImageResolve
+            Silk.NET.Vulkan.ImageAspectFlags aspectFlags = ((source.Usage & TextureUsage.DepthStencil) == TextureUsage.DepthStencil)
+                ? Silk.NET.Vulkan.ImageAspectFlags.ImageAspectDepthBit | Silk.NET.Vulkan.ImageAspectFlags.ImageAspectStencilBit
+                : Silk.NET.Vulkan.ImageAspectFlags.ImageAspectColorBit;
+            var region = new Silk.NET.Vulkan.ImageResolve
             {
-                extent = new VkExtent3D { width = source.Width, height = source.Height, depth = source.Depth },
-                srcSubresource = new VkImageSubresourceLayers { layerCount = 1, aspectMask = aspectFlags },
-                dstSubresource = new VkImageSubresourceLayers { layerCount = 1, aspectMask = aspectFlags }
+                Extent = new Silk.NET.Vulkan.Extent3D { Width = source.Width, Height = source.Height, Depth = source.Depth },
+                SrcSubresource = new Silk.NET.Vulkan.ImageSubresourceLayers { LayerCount = 1, AspectMask = aspectFlags },
+                DstSubresource = new Silk.NET.Vulkan.ImageSubresourceLayers { LayerCount = 1, AspectMask = aspectFlags }
             };
 
-            vkSource.TransitionImageLayout(_cb, 0, 1, 0, 1, VkImageLayout.TransferSrcOptimal);
-            vkDestination.TransitionImageLayout(_cb, 0, 1, 0, 1, VkImageLayout.TransferDstOptimal);
+            vkSource.TransitionImageLayout(_cb, 0, 1, 0, 1, Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal);
+            vkDestination.TransitionImageLayout(_cb, 0, 1, 0, 1, Silk.NET.Vulkan.ImageLayout.TransferDstOptimal);
 
-            vkCmdResolveImage(
+            _vk.CmdResolveImage(
                 _cb,
                 vkSource.OptimalDeviceImage,
-                 VkImageLayout.TransferSrcOptimal,
+                 Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal,
                 vkDestination.OptimalDeviceImage,
-                VkImageLayout.TransferDstOptimal,
+                Silk.NET.Vulkan.ImageLayout.TransferDstOptimal,
                 1,
-                ref region);
+                &region);
 
             if ((vkDestination.Usage & TextureUsage.Sampled) != 0)
             {
-                vkDestination.TransitionImageLayout(_cb, 0, 1, 0, 1, VkImageLayout.ShaderReadOnlyOptimal);
+                vkDestination.TransitionImageLayout(_cb, 0, 1, 0, 1, Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal);
             }
+        }
+
+        public override void Begin()
+        {
+            if (_commandBufferBegun)
+            {
+                throw new VeldridException(
+                    "CommandList must be in its initial state, or End() must have been called, for Begin() to be valid to call.");
+            }
+            if (_commandBufferEnded)
+            {
+                _commandBufferEnded = false;
+                _cb = GetNextCommandBuffer();
+                if (_currentStagingInfo != null)
+                {
+                    RecycleStagingInfo(_currentStagingInfo);
+                }
+            }
+
+            _currentStagingInfo = GetStagingResourceInfo();
+
+            Silk.NET.Vulkan.CommandBufferBeginInfo beginInfo = new Silk.NET.Vulkan.CommandBufferBeginInfo();
+            beginInfo.SType = Silk.NET.Vulkan.StructureType.CommandBufferBeginInfo;
+            beginInfo.Flags = Silk.NET.Vulkan.CommandBufferUsageFlags.CommandBufferUsageOneTimeSubmitBit;
+            _vk.BeginCommandBuffer(_cb, &beginInfo);
+            _commandBufferBegun = true;
+
+            ClearCachedState();
+            _currentFramebuffer = null;
+            _currentGraphicsPipeline = null;
+            ClearSets(_currentGraphicsResourceSets);
+            Util.ClearArray(_scissorRects);
+
+            _currentComputePipeline = null;
+            ClearSets(_currentComputeResourceSets);
+        }
+
+        public override void BeginWithSubpasses()
+        {
+            this._hasSubPasses = true;
+
+            if (!_currentFramebufferEverActive && _currentFramebuffer != null)
+            {
+                BeginCurrentRenderPass(Silk.NET.Vulkan.SubpassContents.SecondaryCommandBuffers);
+            }
+        }
+
+        public override void BeginAsSubpass(CommandList mainBuffer)
+        {
+            this.mainPass = mainBuffer;
+
+            EnsureRenderPassActive();
+
+            if (isDeclaredAsSubpass == false)
+            {
+                throw new VeldridException("CommandBuffer is not an sub pass.");
+            }
+
+            if (_commandBufferBegun)
+            {
+                throw new VeldridException(
+                    "CommandList must be in its initial state, or End() must have been called, for Begin() to be valid to call.");
+            }
+
+            if (_commandBufferEnded)
+            {
+                _commandBufferEnded = false;
+                _cb = GetNextCommandBuffer();
+                if (_currentStagingInfo != null)
+                {
+                    RecycleStagingInfo(_currentStagingInfo);
+                }
+            }
+
+            _currentStagingInfo = GetStagingResourceInfo();
+
+            var mainPassBuffer = (VkCommandList)mainBuffer;
+
+            Silk.NET.Vulkan.CommandBufferBeginInfo beginInfo = new Silk.NET.Vulkan.CommandBufferBeginInfo();
+            beginInfo.SType = Silk.NET.Vulkan.StructureType.CommandBufferBeginInfo;
+            var inheroInfo = new Silk.NET.Vulkan.CommandBufferInheritanceInfo();
+            inheroInfo.SType = Silk.NET.Vulkan.StructureType.CommandBufferInheritanceInfo;
+            inheroInfo.Framebuffer = mainPassBuffer._currentFramebuffer.CurrentFramebuffer;
+            inheroInfo.RenderPass = mainPassBuffer._activeRenderPass;
+            beginInfo.Flags = Silk.NET.Vulkan.CommandBufferUsageFlags.CommandBufferUsageRenderPassContinueBit;
+            beginInfo.PInheritanceInfo = &inheroInfo;
+
+            _vk.BeginCommandBuffer(_cb, &beginInfo);
+            _commandBufferBegun = true;
+
+            ClearCachedState();
+            _currentFramebuffer = null;
+            _currentGraphicsPipeline = null;
+            ClearSets(_currentGraphicsResourceSets);
+            Util.ClearArray(_scissorRects);
+
+            _currentComputePipeline = null;
+            ClearSets(_currentComputeResourceSets);
+            SetFrameBufferFromMainPass(mainPassBuffer);
+        }
+        private CommandList[] submitCommands = null;
+        public override void EndWithSubpasses(CommandList[] subCommands)
+        {
+            _commandBufferBegun = false;
+            _commandBufferEnded = true;
+
+            this.submitCommands = subCommands;
+
+            var commandList =new  Silk.NET.Vulkan.CommandBuffer[subCommands.Length];
+            int i = 0;
+            foreach(var subCommand in subCommands)
+            {
+                commandList[i] = (subCommand as VkCommandList).CommandBuffer;
+                i++;
+            }
+
+            fixed (Silk.NET.Vulkan.CommandBuffer* bufferPtr = &commandList[0])
+            {
+                _vk.CmdExecuteCommands(_cb, (uint)commandList.Length, bufferPtr);
+            }
+
+            if (_activeRenderPass.Handle != default)
+            {
+                EndCurrentRenderPass();
+                _currentFramebuffer.TransitionToFinalLayout(_cb);
+            }
+
+            _vk.EndCommandBuffer(_cb);
+            _submittedCommandBuffers.Add(_cb);
+        }
+
+        public override void EndAsSubpass()
+        {
+            if (mainPass == null || isDeclaredAsSubpass == false)
+            {
+                throw new VeldridException(
+                    "CommandList ist not an subpass.");
+            }
+
+            _commandBufferBegun = false;
+            _commandBufferEnded = true;
+
+            _vk.EndCommandBuffer(_cb);
+            _submittedCommandBuffers.Add(_cb);
+
+            this.mainPass = null;
+            _activeRenderPass.Handle = default;
+            _framebuffer = null;
+            _currentFramebufferEverActive = false;
+            _currentFramebuffer = null;
         }
 
         public override void End()
@@ -454,19 +595,41 @@ namespace Veldrid.Vk
             {
                 BeginCurrentRenderPass();
             }
-            if (_activeRenderPass != VkRenderPass.Null)
+
+            if (_activeRenderPass.Handle != default)
             {
                 EndCurrentRenderPass();
                 _currentFramebuffer.TransitionToFinalLayout(_cb);
             }
 
-            vkEndCommandBuffer(_cb);
+            _vk.EndCommandBuffer(_cb);
             _submittedCommandBuffers.Add(_cb);
+        }
+
+        private void SetFrameBufferFromMainPass(VkCommandList mainBuffer)
+        {
+            _framebuffer = mainBuffer._framebuffer;
+
+            _currentFramebuffer = mainBuffer._currentFramebuffer;
+            _currentFramebufferEverActive = mainBuffer._currentFramebufferEverActive;
+            _activeRenderPass = mainBuffer._activeRenderPass;
+            _newFramebuffer = mainBuffer._newFramebuffer;
+
+            Util.EnsureArrayMinimumSize(ref _scissorRects, Math.Max(1, (uint)_currentFramebuffer.ColorTargets.Count));
+            uint clearValueCount = (uint)_currentFramebuffer.ColorTargets.Count;
+            Util.EnsureArrayMinimumSize(ref _clearValues, clearValueCount + 1); // Leave an extra space for the depth value (tracked separately).
+            Util.ClearArray(_validColorClearValues);
+            Util.EnsureArrayMinimumSize(ref _validColorClearValues, clearValueCount);
         }
 
         protected override void SetFramebufferCore(Framebuffer fb)
         {
-            if (_activeRenderPass.Handle != VkRenderPass.Null)
+            if(this.isDeclaredAsSubpass)
+            {
+                throw new VeldridException("Cant set framebuffer of an sub pass.");
+            }
+
+            if (_activeRenderPass.Handle != default)
             {
                 EndCurrentRenderPass();
             }
@@ -501,7 +664,16 @@ namespace Veldrid.Vk
 
         private void EnsureRenderPassActive()
         {
-            if (_activeRenderPass == VkRenderPass.Null)
+            if(this.isDeclaredAsSubpass)
+            {
+                if(this.mainPass == null)
+                {
+                    throw new VeldridException("No main pass found.");
+                }
+                if ((this.mainPass as VkCommandList)._activeRenderPass.Handle == default)
+                    throw new VeldridException("There is no renderpass active on main Pass");
+            }
+            else if (_activeRenderPass.Handle == default)
             {
                 BeginCurrentRenderPass();
             }
@@ -509,15 +681,19 @@ namespace Veldrid.Vk
 
         private void EnsureNoRenderPass()
         {
-            if (_activeRenderPass != VkRenderPass.Null)
+            if (this.isDeclaredAsSubpass)
+            {
+                throw new VeldridException("There is active render pass of the main pass.");
+            }
+            else if (_activeRenderPass.Handle != default)
             {
                 EndCurrentRenderPass();
             }
         }
 
-        private void BeginCurrentRenderPass()
+        private void BeginCurrentRenderPass(Silk.NET.Vulkan.SubpassContents content = Silk.NET.Vulkan.SubpassContents.Inline)
         {
-            Debug.Assert(_activeRenderPass == VkRenderPass.Null);
+            Debug.Assert(_activeRenderPass.Handle == default);
             Debug.Assert(_currentFramebuffer != null);
             _currentFramebufferEverActive = true;
 
@@ -537,23 +713,27 @@ namespace Veldrid.Vk
                 }
             }
 
-            VkRenderPassBeginInfo renderPassBI = VkRenderPassBeginInfo.New();
-            renderPassBI.renderArea = new VkRect2D(_currentFramebuffer.RenderableWidth, _currentFramebuffer.RenderableHeight);
-            renderPassBI.framebuffer = _currentFramebuffer.CurrentFramebuffer;
+            var renderPassBI = new Silk.NET.Vulkan.RenderPassBeginInfo();
+            renderPassBI.SType = Silk.NET.Vulkan.StructureType.RenderPassBeginInfo;
+
+            renderPassBI.RenderArea = new Silk.NET.Vulkan.Rect2D(new Silk.NET.Vulkan.Offset2D(0,0),
+                new Silk.NET.Vulkan.Extent2D(_currentFramebuffer.RenderableWidth, _currentFramebuffer.RenderableHeight));
+
+            renderPassBI.Framebuffer = _currentFramebuffer.CurrentFramebuffer;
 
             if (!haveAnyAttachments || !haveAllClearValues)
             {
-                renderPassBI.renderPass = _newFramebuffer
+                renderPassBI.RenderPass = _newFramebuffer
                     ? _currentFramebuffer.RenderPassNoClear_Init
                     : _currentFramebuffer.RenderPassNoClear_Load;
-                vkCmdBeginRenderPass(_cb, ref renderPassBI, VkSubpassContents.Inline);
-                _activeRenderPass = renderPassBI.renderPass;
+                _vk.CmdBeginRenderPass(_cb, &renderPassBI,  content);
+                _activeRenderPass = renderPassBI.RenderPass;
 
                 if (haveAnyClearValues)
                 {
                     if (_depthClearValue.HasValue)
                     {
-                        ClearDepthStencilCore(_depthClearValue.Value.depthStencil.depth, (byte)_depthClearValue.Value.depthStencil.stencil);
+                        ClearDepthStencilCore(_depthClearValue.Value.DepthStencil.Depth, (byte)_depthClearValue.Value.DepthStencil.Stencil);
                         _depthClearValue = null;
                     }
 
@@ -562,12 +742,12 @@ namespace Veldrid.Vk
                         if (_validColorClearValues[i])
                         {
                             _validColorClearValues[i] = false;
-                            VkClearValue vkClearValue = _clearValues[i];
+                            var vkClearValue = _clearValues[i];
                             RgbaFloat clearColor = new RgbaFloat(
-                                vkClearValue.color.float32_0,
-                                vkClearValue.color.float32_1,
-                                vkClearValue.color.float32_2,
-                                vkClearValue.color.float32_3);
+                                vkClearValue.Color.Float32_0,
+                                vkClearValue.Color.Float32_1,
+                                vkClearValue.Color.Float32_2,
+                                vkClearValue.Color.Float32_3);
                             ClearColorTarget(i, clearColor);
                         }
                     }
@@ -576,17 +756,17 @@ namespace Veldrid.Vk
             else
             {
                 // We have clear values for every attachment.
-                renderPassBI.renderPass = _currentFramebuffer.RenderPassClear;
-                fixed (VkClearValue* clearValuesPtr = &_clearValues[0])
+                renderPassBI.RenderPass = _currentFramebuffer.RenderPassClear;
+                fixed (Silk.NET.Vulkan.ClearValue* clearValuesPtr = &_clearValues[0])
                 {
-                    renderPassBI.clearValueCount = attachmentCount;
-                    renderPassBI.pClearValues = clearValuesPtr;
+                    renderPassBI.ClearValueCount = attachmentCount;
+                    renderPassBI.PClearValues = clearValuesPtr;
                     if (_depthClearValue.HasValue)
                     {
                         _clearValues[_currentFramebuffer.ColorTargets.Count] = _depthClearValue.Value;
                         _depthClearValue = null;
                     }
-                    vkCmdBeginRenderPass(_cb, ref renderPassBI, VkSubpassContents.Inline);
+                    _vk.CmdBeginRenderPass(_cb, &renderPassBI, content);
                     _activeRenderPass = _currentFramebuffer.RenderPassClear;
                     Util.ClearArray(_validColorClearValues);
                 }
@@ -597,18 +777,18 @@ namespace Veldrid.Vk
 
         private void EndCurrentRenderPass()
         {
-            Debug.Assert(_activeRenderPass != VkRenderPass.Null);
-            vkCmdEndRenderPass(_cb);
+            Debug.Assert(_activeRenderPass.Handle != default);
+            _vk.CmdEndRenderPass(_cb);
             _currentFramebuffer.TransitionToIntermediateLayout(_cb);
-            _activeRenderPass = VkRenderPass.Null;
+            _activeRenderPass.Handle = default;
 
             // Place a barrier between RenderPasses, so that color / depth outputs
             // can be read in subsequent passes.
-            vkCmdPipelineBarrier(
+            _vk.CmdPipelineBarrier(
                 _cb,
-                VkPipelineStageFlags.BottomOfPipe,
-                VkPipelineStageFlags.TopOfPipe,
-                VkDependencyFlags.None,
+                Silk.NET.Vulkan.PipelineStageFlags.PipelineStageBottomOfPipeBit,
+                Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTopOfPipeBit,
+               0,
                 0,
                 null,
                 0,
@@ -620,16 +800,16 @@ namespace Veldrid.Vk
         private protected override void SetVertexBufferCore(uint index, DeviceBuffer buffer, uint offset)
         {
             VkBuffer vkBuffer = Util.AssertSubtype<DeviceBuffer, VkBuffer>(buffer);
-            Vulkan.VkBuffer deviceBuffer = vkBuffer.DeviceBuffer;
+            var deviceBuffer = vkBuffer.DeviceBuffer;
             ulong offset64 = offset;
-            vkCmdBindVertexBuffers(_cb, index, 1, ref deviceBuffer, ref offset64);
+            _vk.CmdBindVertexBuffers(_cb, index, 1, &deviceBuffer, &offset64);
             _currentStagingInfo.Resources.Add(vkBuffer.RefCount);
         }
 
         private protected override void SetIndexBufferCore(DeviceBuffer buffer, IndexFormat format, uint offset)
         {
             VkBuffer vkBuffer = Util.AssertSubtype<DeviceBuffer, VkBuffer>(buffer);
-            vkCmdBindIndexBuffer(_cb, vkBuffer.DeviceBuffer, offset, VkFormats.VdToVkIndexFormat(format));
+            _vk.CmdBindIndexBuffer(_cb, vkBuffer.DeviceBuffer, offset, VkFormats.VdToVkIndexFormat(format));
             _currentStagingInfo.Resources.Add(vkBuffer.RefCount);
         }
 
@@ -641,7 +821,7 @@ namespace Veldrid.Vk
                 Util.EnsureArrayMinimumSize(ref _currentGraphicsResourceSets, vkPipeline.ResourceSetCount);
                 ClearSets(_currentGraphicsResourceSets);
                 Util.EnsureArrayMinimumSize(ref _graphicsResourceSetsChanged, vkPipeline.ResourceSetCount);
-                vkCmdBindPipeline(_cb, VkPipelineBindPoint.Graphics, vkPipeline.DevicePipeline);
+                _vk.CmdBindPipeline(_cb, Silk.NET.Vulkan.PipelineBindPoint.Graphics, vkPipeline.DevicePipeline);
                 _currentGraphicsPipeline = vkPipeline;
             }
             else if (pipeline.IsComputePipeline && _currentComputePipeline != pipeline)
@@ -649,7 +829,7 @@ namespace Veldrid.Vk
                 Util.EnsureArrayMinimumSize(ref _currentComputeResourceSets, vkPipeline.ResourceSetCount);
                 ClearSets(_currentComputeResourceSets);
                 Util.EnsureArrayMinimumSize(ref _computeResourceSetsChanged, vkPipeline.ResourceSetCount);
-                vkCmdBindPipeline(_cb, VkPipelineBindPoint.Compute, vkPipeline.DevicePipeline);
+                _vk.CmdBindPipeline(_cb, Silk.NET.Vulkan.PipelineBindPoint.Compute, vkPipeline.DevicePipeline);
                 _currentComputePipeline = vkPipeline;
             }
 
@@ -691,11 +871,13 @@ namespace Veldrid.Vk
         {
             if (index == 0 || _gd.Features.MultipleViewports)
             {
-                VkRect2D scissor = new VkRect2D((int)x, (int)y, (int)width, (int)height);
-                if (_scissorRects[index] != scissor)
+                var scissor = new Silk.NET.Vulkan.Rect2D(new Silk.NET.Vulkan.Offset2D((int)x, (int)y), new Silk.NET.Vulkan.Extent2D((uint)width, (uint)height));
+                if (_scissorRects[index].Offset.X != scissor.Offset.X || _scissorRects[index].Offset.Y != scissor.Offset.Y ||
+                    _scissorRects[index].Extent.Width != scissor.Extent.Width ||
+                    _scissorRects[index].Extent.Height != scissor.Extent.Height)
                 {
                     _scissorRects[index] = scissor;
-                    vkCmdSetScissor(_cb, index, 1, ref scissor);
+                    _vk.CmdSetScissor(_cb, index, 1, &scissor);
                 }
             }
         }
@@ -711,17 +893,17 @@ namespace Veldrid.Vk
                     ? viewport.Height
                     : -viewport.Height;
 
-                VkViewport vkViewport = new VkViewport
+                var vkViewport = new Silk.NET.Vulkan.Viewport
                 {
-                    x = viewport.X,
-                    y = vpY,
-                    width = viewport.Width,
-                    height = vpHeight,
-                    minDepth = viewport.MinDepth,
-                    maxDepth = viewport.MaxDepth
+                    X = viewport.X,
+                    Y = vpY,
+                    Width = viewport.Width,
+                    Height = vpHeight,
+                    MinDepth = viewport.MinDepth,
+                    MaxDepth = viewport.MaxDepth
                 };
 
-                vkCmdSetViewport(_cb, index, 1, ref vkViewport);
+                _vk.CmdSetViewport(_cb, index, 1, &vkViewport);
             }
         }
 
@@ -746,25 +928,26 @@ namespace Veldrid.Vk
             VkBuffer dstVkBuffer = Util.AssertSubtype<DeviceBuffer, VkBuffer>(destination);
             _currentStagingInfo.Resources.Add(dstVkBuffer.RefCount);
 
-            VkBufferCopy region = new VkBufferCopy
+            var region = new Silk.NET.Vulkan.BufferCopy
             {
-                srcOffset = sourceOffset,
-                dstOffset = destinationOffset,
-                size = sizeInBytes
+                SrcOffset = sourceOffset,
+                DstOffset = destinationOffset,
+                Size = sizeInBytes
             };
 
-            vkCmdCopyBuffer(_cb, srcVkBuffer.DeviceBuffer, dstVkBuffer.DeviceBuffer, 1, ref region);
 
-            VkMemoryBarrier barrier;
-            barrier.sType = VkStructureType.MemoryBarrier;
-            barrier.srcAccessMask = VkAccessFlags.TransferWrite;
-            barrier.dstAccessMask = VkAccessFlags.VertexAttributeRead;
-            barrier.pNext = null;
-            vkCmdPipelineBarrier(
+            _vk.CmdCopyBuffer(_cb, srcVkBuffer.DeviceBuffer, dstVkBuffer.DeviceBuffer, 1, &region);
+
+            Silk.NET.Vulkan.MemoryBarrier barrier = new Silk.NET.Vulkan.MemoryBarrier();
+            barrier.SType = Silk.NET.Vulkan.StructureType.MemoryBarrier;
+            barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferWriteBit;
+            barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessVertexAttributeReadBit;
+            barrier.PNext = null;
+            _vk.CmdPipelineBarrier(
                 _cb,
-                VkPipelineStageFlags.Transfer, VkPipelineStageFlags.VertexInput,
-                VkDependencyFlags.None,
-                1, ref barrier,
+                Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit, Silk.NET.Vulkan.PipelineStageFlags.PipelineStageVertexInputBit,
+                0,
+                1, &barrier,
                 0, null,
                 0, null);
         }
@@ -783,6 +966,7 @@ namespace Veldrid.Vk
         {
             EnsureNoRenderPass();
             CopyTextureCore_VkCommandBuffer(
+                _vk,
                 _cb,
                 source, srcX, srcY, srcZ, srcMipLevel, srcBaseArrayLayer,
                 destination, dstX, dstY, dstZ, dstMipLevel, dstBaseArrayLayer,
@@ -795,7 +979,9 @@ namespace Veldrid.Vk
         }
 
         internal static void CopyTextureCore_VkCommandBuffer(
-            VkCommandBuffer cb,
+
+            Silk.NET.Vulkan.Vk _vk,
+            Silk.NET.Vulkan.CommandBuffer cb,
             Texture source,
             uint srcX, uint srcY, uint srcZ,
             uint srcMipLevel,
@@ -815,29 +1001,29 @@ namespace Veldrid.Vk
 
             if (!sourceIsStaging && !destIsStaging)
             {
-                VkImageSubresourceLayers srcSubresource = new VkImageSubresourceLayers
+                var srcSubresource =  new Silk.NET.Vulkan.ImageSubresourceLayers
                 {
-                    aspectMask = VkImageAspectFlags.Color,
-                    layerCount = layerCount,
-                    mipLevel = srcMipLevel,
-                    baseArrayLayer = srcBaseArrayLayer
+                    AspectMask = Silk.NET.Vulkan.ImageAspectFlags.ImageAspectColorBit,
+                    LayerCount = layerCount,
+                    MipLevel = srcMipLevel,
+                    BaseArrayLayer = srcBaseArrayLayer
                 };
 
-                VkImageSubresourceLayers dstSubresource = new VkImageSubresourceLayers
+                var dstSubresource = new Silk.NET.Vulkan.ImageSubresourceLayers
                 {
-                    aspectMask = VkImageAspectFlags.Color,
-                    layerCount = layerCount,
-                    mipLevel = dstMipLevel,
-                    baseArrayLayer = dstBaseArrayLayer
+                    AspectMask = Silk.NET.Vulkan.ImageAspectFlags.ImageAspectColorBit,
+                    LayerCount = layerCount,
+                    MipLevel = dstMipLevel,
+                    BaseArrayLayer = dstBaseArrayLayer
                 };
 
-                VkImageCopy region = new VkImageCopy
+                var region = new Silk.NET.Vulkan.ImageCopy
                 {
-                    srcOffset = new VkOffset3D { x = (int)srcX, y = (int)srcY, z = (int)srcZ },
-                    dstOffset = new VkOffset3D { x = (int)dstX, y = (int)dstY, z = (int)dstZ },
-                    srcSubresource = srcSubresource,
-                    dstSubresource = dstSubresource,
-                    extent = new VkExtent3D { width = width, height = height, depth = depth }
+                    SrcOffset = new Silk.NET.Vulkan.Offset3D { X = (int)srcX, Y = (int)srcY, Z = (int)srcZ },
+                    DstOffset = new Silk.NET.Vulkan.Offset3D { X = (int)dstX, Y = (int)dstY, Z = (int)dstZ },
+                    SrcSubresource = srcSubresource,
+                    DstSubresource = dstSubresource,
+                    Extent = new Silk.NET.Vulkan.Extent3D {Width = width, Height = height, Depth = depth }
                 };
 
                 srcVkTexture.TransitionImageLayout(
@@ -846,7 +1032,7 @@ namespace Veldrid.Vk
                     1,
                     srcBaseArrayLayer,
                     layerCount,
-                    VkImageLayout.TransferSrcOptimal);
+                    Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal);
 
                 dstVkTexture.TransitionImageLayout(
                     cb,
@@ -854,16 +1040,16 @@ namespace Veldrid.Vk
                     1,
                     dstBaseArrayLayer,
                     layerCount,
-                    VkImageLayout.TransferDstOptimal);
+                    Silk.NET.Vulkan.ImageLayout.TransferDstOptimal);
 
-                vkCmdCopyImage(
+                _vk.CmdCopyImage(
                     cb,
                     srcVkTexture.OptimalDeviceImage,
-                    VkImageLayout.TransferSrcOptimal,
+                    Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal,
                     dstVkTexture.OptimalDeviceImage,
-                    VkImageLayout.TransferDstOptimal,
+                    Silk.NET.Vulkan.ImageLayout.TransferDstOptimal,
                     1,
-                    ref region);
+                    &region);
 
                 if ((srcVkTexture.Usage & TextureUsage.Sampled) != 0)
                 {
@@ -873,7 +1059,7 @@ namespace Veldrid.Vk
                         1,
                         srcBaseArrayLayer,
                         layerCount,
-                        VkImageLayout.ShaderReadOnlyOptimal);
+                        Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal);
                 }
 
                 if ((dstVkTexture.Usage & TextureUsage.Sampled) != 0)
@@ -884,29 +1070,29 @@ namespace Veldrid.Vk
                         1,
                         dstBaseArrayLayer,
                         layerCount,
-                        VkImageLayout.ShaderReadOnlyOptimal);
+                        Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal);
                 }
             }
             else if (sourceIsStaging && !destIsStaging)
             {
-                Vulkan.VkBuffer srcBuffer = srcVkTexture.StagingBuffer;
-                VkSubresourceLayout srcLayout = srcVkTexture.GetSubresourceLayout(
+                var srcBuffer = srcVkTexture.StagingBuffer;
+                Silk.NET.Vulkan.SubresourceLayout srcLayout = srcVkTexture.GetSubresourceLayout(
                     srcVkTexture.CalculateSubresource(srcMipLevel, srcBaseArrayLayer));
-                VkImage dstImage = dstVkTexture.OptimalDeviceImage;
+                Silk.NET.Vulkan.Image dstImage = dstVkTexture.OptimalDeviceImage;
                 dstVkTexture.TransitionImageLayout(
                     cb,
                     dstMipLevel,
                     1,
                     dstBaseArrayLayer,
                     layerCount,
-                    VkImageLayout.TransferDstOptimal);
+                    Silk.NET.Vulkan.ImageLayout.TransferDstOptimal);
 
-                VkImageSubresourceLayers dstSubresource = new VkImageSubresourceLayers
+                var dstSubresource = new Silk.NET.Vulkan.ImageSubresourceLayers
                 {
-                    aspectMask = VkImageAspectFlags.Color,
-                    layerCount = layerCount,
-                    mipLevel = dstMipLevel,
-                    baseArrayLayer = dstBaseArrayLayer
+                    AspectMask = Silk.NET.Vulkan.ImageAspectFlags.ImageAspectColorBit,
+                    LayerCount = layerCount,
+                    MipLevel = dstMipLevel,
+                    BaseArrayLayer = dstBaseArrayLayer
                 };
 
                 Util.GetMipDimensions(srcVkTexture, srcMipLevel, out uint mipWidth, out uint mipHeight, out uint mipDepth);
@@ -924,20 +1110,20 @@ namespace Veldrid.Vk
                 uint copyWidth = Math.Min(width, mipWidth);
                 uint copyheight = Math.Min(height, mipHeight);
 
-                VkBufferImageCopy regions = new VkBufferImageCopy
+                var regions = new Silk.NET.Vulkan.BufferImageCopy
                 {
-                    bufferOffset = srcLayout.offset
+                    BufferOffset = srcLayout.Offset
                         + (srcZ * depthPitch)
                         + (compressedY * rowPitch)
                         + (compressedX * blockSizeInBytes),
-                    bufferRowLength = bufferRowLength,
-                    bufferImageHeight = bufferImageHeight,
-                    imageExtent = new VkExtent3D { width = copyWidth, height = copyheight, depth = depth },
-                    imageOffset = new VkOffset3D { x = (int)dstX, y = (int)dstY, z = (int)dstZ },
-                    imageSubresource = dstSubresource
+                    BufferRowLength = bufferRowLength,
+                    BufferImageHeight = bufferImageHeight,
+                    ImageExtent = new Silk.NET.Vulkan.Extent3D { Width = copyWidth, Height = copyheight, Depth = depth },
+                    ImageOffset = new Silk.NET.Vulkan.Offset3D { X = (int)dstX, Y = (int)dstY, Z = (int)dstZ },
+                    ImageSubresource = dstSubresource
                 };
 
-                vkCmdCopyBufferToImage(cb, srcBuffer, dstImage, VkImageLayout.TransferDstOptimal, 1, ref regions);
+                _vk.CmdCopyBufferToImage(cb, srcBuffer, dstImage, Silk.NET.Vulkan.ImageLayout.TransferDstOptimal, 1, &regions);
 
                 if ((dstVkTexture.Usage & TextureUsage.Sampled) != 0)
                 {
@@ -947,33 +1133,34 @@ namespace Veldrid.Vk
                         1,
                         dstBaseArrayLayer,
                         layerCount,
-                        VkImageLayout.ShaderReadOnlyOptimal);
+                        Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal);
                 }
             }
             else if (!sourceIsStaging && destIsStaging)
             {
-                VkImage srcImage = srcVkTexture.OptimalDeviceImage;
+                Silk.NET.Vulkan.Image srcImage = srcVkTexture.OptimalDeviceImage;
                 srcVkTexture.TransitionImageLayout(
                     cb,
                     srcMipLevel,
                     1,
                     srcBaseArrayLayer,
                     layerCount,
-                    VkImageLayout.TransferSrcOptimal);
+                    Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal);
 
-                Vulkan.VkBuffer dstBuffer = dstVkTexture.StagingBuffer;
-                VkSubresourceLayout dstLayout = dstVkTexture.GetSubresourceLayout(
+                var dstBuffer = dstVkTexture.StagingBuffer;
+                Silk.NET.Vulkan.SubresourceLayout dstLayout = dstVkTexture.GetSubresourceLayout(
                     dstVkTexture.CalculateSubresource(dstMipLevel, dstBaseArrayLayer));
 
-                VkImageAspectFlags aspect = (srcVkTexture.Usage & TextureUsage.DepthStencil) != 0
-                    ? VkImageAspectFlags.Depth
-                    : VkImageAspectFlags.Color;
-                VkImageSubresourceLayers srcSubresource = new VkImageSubresourceLayers
+                Silk.NET.Vulkan.ImageAspectFlags aspect = (srcVkTexture.Usage & TextureUsage.DepthStencil) != 0
+                    ? Silk.NET.Vulkan.ImageAspectFlags.ImageAspectDepthBit
+                    : Silk.NET.Vulkan.ImageAspectFlags.ImageAspectColorBit;
+
+                var srcSubresource = new Silk.NET.Vulkan.ImageSubresourceLayers
                 {
-                    aspectMask = aspect,
-                    layerCount = layerCount,
-                    mipLevel = srcMipLevel,
-                    baseArrayLayer = srcBaseArrayLayer
+                    AspectMask = aspect,
+                    LayerCount = layerCount,
+                    MipLevel = srcMipLevel,
+                    BaseArrayLayer = srcBaseArrayLayer
                 };
 
                 Util.GetMipDimensions(dstVkTexture, dstMipLevel, out uint mipWidth, out uint mipHeight, out uint mipDepth);
@@ -988,20 +1175,20 @@ namespace Veldrid.Vk
                 uint rowPitch = FormatHelpers.GetRowPitch(bufferRowLength, dstVkTexture.Format);
                 uint depthPitch = FormatHelpers.GetDepthPitch(rowPitch, bufferImageHeight, dstVkTexture.Format);
 
-                VkBufferImageCopy region = new VkBufferImageCopy
+                var region = new Silk.NET.Vulkan.BufferImageCopy
                 {
-                    bufferRowLength = mipWidth,
-                    bufferImageHeight = mipHeight,
-                    bufferOffset = dstLayout.offset
+                    BufferRowLength = mipWidth,
+                    BufferImageHeight = mipHeight,
+                    BufferOffset = dstLayout.Offset
                         + (dstZ * depthPitch)
                         + (compressedDstY * rowPitch)
                         + (compressedDstX * blockSizeInBytes),
-                    imageExtent = new VkExtent3D { width = width, height = height, depth = depth },
-                    imageOffset = new VkOffset3D { x = (int)srcX, y = (int)srcY, z = (int)srcZ },
-                    imageSubresource = srcSubresource
+                    ImageExtent = new Silk.NET.Vulkan.Extent3D { Width = width, Height = height, Depth = depth },
+                    ImageOffset = new Silk.NET.Vulkan.Offset3D { X = (int)srcX, Y = (int)srcY, Z = (int)srcZ },
+                    ImageSubresource = srcSubresource
                 };
 
-                vkCmdCopyImageToBuffer(cb, srcImage, VkImageLayout.TransferSrcOptimal, dstBuffer, 1, ref region);
+                _vk.CmdCopyImageToBuffer(cb, srcImage, Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal, dstBuffer, 1, &region);
 
                 if ((srcVkTexture.Usage & TextureUsage.Sampled) != 0)
                 {
@@ -1011,17 +1198,17 @@ namespace Veldrid.Vk
                         1,
                         srcBaseArrayLayer,
                         layerCount,
-                        VkImageLayout.ShaderReadOnlyOptimal);
+                        Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal);
                 }
             }
             else
             {
                 Debug.Assert(sourceIsStaging && destIsStaging);
-                Vulkan.VkBuffer srcBuffer = srcVkTexture.StagingBuffer;
-                VkSubresourceLayout srcLayout = srcVkTexture.GetSubresourceLayout(
+                var srcBuffer = srcVkTexture.StagingBuffer;
+                Silk.NET.Vulkan.SubresourceLayout srcLayout = srcVkTexture.GetSubresourceLayout(
                     srcVkTexture.CalculateSubresource(srcMipLevel, srcBaseArrayLayer));
-                Vulkan.VkBuffer dstBuffer = dstVkTexture.StagingBuffer;
-                VkSubresourceLayout dstLayout = dstVkTexture.GetSubresourceLayout(
+                var dstBuffer = dstVkTexture.StagingBuffer;
+                Silk.NET.Vulkan.SubresourceLayout dstLayout = dstVkTexture.GetSubresourceLayout(
                     dstVkTexture.CalculateSubresource(dstMipLevel, dstBaseArrayLayer));
 
                 uint zLimit = Math.Max(depth, layerCount);
@@ -1032,20 +1219,20 @@ namespace Veldrid.Vk
                     {
                         for (uint yy = 0; yy < height; yy++)
                         {
-                            VkBufferCopy region = new VkBufferCopy
+                            var region = new Silk.NET.Vulkan.BufferCopy
                             {
-                                srcOffset = srcLayout.offset
-                                    + srcLayout.depthPitch * (zz + srcZ)
-                                    + srcLayout.rowPitch * (yy + srcY)
+                                SrcOffset = srcLayout.Offset
+                                    + srcLayout.DepthPitch * (zz + srcZ)
+                                    + srcLayout.RowPitch * (yy + srcY)
                                     + pixelSize * srcX,
-                                dstOffset = dstLayout.offset
-                                    + dstLayout.depthPitch * (zz + dstZ)
-                                    + dstLayout.rowPitch * (yy + dstY)
+                                DstOffset = dstLayout.Offset
+                                    + dstLayout.DepthPitch * (zz + dstZ)
+                                    + dstLayout.RowPitch * (yy + dstY)
                                     + pixelSize * dstX,
-                                size = width * pixelSize,
+                                Size = width * pixelSize,
                             };
 
-                            vkCmdCopyBuffer(cb, srcBuffer, dstBuffer, 1, ref region);
+                            _vk.CmdCopyBuffer(cb, srcBuffer, dstBuffer, 1, &region);
                         }
                     }
                 }
@@ -1063,20 +1250,20 @@ namespace Veldrid.Vk
                     {
                         for (uint row = 0; row < numRows; row++)
                         {
-                            VkBufferCopy region = new VkBufferCopy
+                            var region = new Silk.NET.Vulkan.BufferCopy
                             {
-                                srcOffset = srcLayout.offset
-                                    + srcLayout.depthPitch * (zz + srcZ)
-                                    + srcLayout.rowPitch * (row + compressedSrcY)
+                                SrcOffset = srcLayout.Offset
+                                    + srcLayout.DepthPitch * (zz + srcZ)
+                                    + srcLayout.RowPitch * (row + compressedSrcY)
                                     + blockSizeInBytes * compressedSrcX,
-                                dstOffset = dstLayout.offset
-                                    + dstLayout.depthPitch * (zz + dstZ)
-                                    + dstLayout.rowPitch * (row + compressedDstY)
+                                DstOffset = dstLayout.Offset
+                                    + dstLayout.DepthPitch * (zz + dstZ)
+                                    + dstLayout.RowPitch * (row + compressedDstY)
                                     + blockSizeInBytes * compressedDstX,
-                                size = denseRowSize,
+                                Size = denseRowSize,
                             };
 
-                            vkCmdCopyBuffer(cb, srcBuffer, dstBuffer, 1, ref region);
+                            _vk.CmdCopyBuffer(cb, srcBuffer, dstBuffer, 1, &region);
                         }
                     }
 
@@ -1096,45 +1283,48 @@ namespace Veldrid.Vk
                 layerCount *= 6;
             }
 
-            VkImageBlit region;
+            var region = new Silk.NET.Vulkan.ImageBlit();
 
             uint width = vkTex.Width;
             uint height = vkTex.Height;
             uint depth = vkTex.Depth;
             for (uint level = 1; level < vkTex.MipLevels; level++)
             {
-                vkTex.TransitionImageLayoutNonmatching(_cb, level - 1, 1, 0, layerCount, VkImageLayout.TransferSrcOptimal);
-                vkTex.TransitionImageLayoutNonmatching(_cb, level, 1, 0, layerCount, VkImageLayout.TransferDstOptimal);
+                vkTex.TransitionImageLayoutNonmatching(_cb, level - 1, 1, 0, layerCount, Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal);
+                vkTex.TransitionImageLayoutNonmatching(_cb, level, 1, 0, layerCount, Silk.NET.Vulkan.ImageLayout.TransferDstOptimal);
 
-                VkImage deviceImage = vkTex.OptimalDeviceImage;
+                Silk.NET.Vulkan.Image deviceImage = vkTex.OptimalDeviceImage;
                 uint mipWidth = Math.Max(width >> 1, 1);
                 uint mipHeight = Math.Max(height >> 1, 1);
                 uint mipDepth = Math.Max(depth >> 1, 1);
 
-                region.srcSubresource = new VkImageSubresourceLayers
+                region.SrcSubresource = new Silk.NET.Vulkan.ImageSubresourceLayers
                 {
-                    aspectMask = VkImageAspectFlags.Color,
-                    baseArrayLayer = 0,
-                    layerCount = layerCount,
-                    mipLevel = level - 1
+                    AspectMask = Silk.NET.Vulkan.ImageAspectFlags.ImageAspectColorBit,
+                    BaseArrayLayer = 0,
+                    LayerCount = layerCount,
+                    MipLevel = level - 1
                 };
-                region.srcOffsets_0 = new VkOffset3D();
-                region.srcOffsets_1 = new VkOffset3D { x = (int)width, y = (int)height, z = (int)depth };
-                region.dstOffsets_0 = new VkOffset3D();
+              //  region.SrcOffsets = new Silk.NET.Vulkan.ImageBlit.SrcOffsetsBuffer();
+              //  region.DstOffsets = new Silk.NET.Vulkan.ImageBlit.DstOffsetsBuffer();
 
-                region.dstSubresource = new VkImageSubresourceLayers
+                region.SrcOffsets.Element0 = new Silk.NET.Vulkan.Offset3D();
+                region.SrcOffsets.Element1 = new Silk.NET.Vulkan.Offset3D { X = (int)width, Y = (int)height, Z = (int)depth };
+                region.DstOffsets.Element0 = new Silk.NET.Vulkan.Offset3D();
+
+                region.DstSubresource = new Silk.NET.Vulkan.ImageSubresourceLayers
                 {
-                    aspectMask = VkImageAspectFlags.Color,
-                    baseArrayLayer = 0,
-                    layerCount = layerCount,
-                    mipLevel = level
+                    AspectMask = Silk.NET.Vulkan.ImageAspectFlags.ImageAspectColorBit,
+                    BaseArrayLayer = 0,
+                    LayerCount = layerCount,
+                    MipLevel = level
                 };
 
-                region.dstOffsets_1 = new VkOffset3D { x = (int)mipWidth, y = (int)mipHeight, z = (int)mipDepth };
-                vkCmdBlitImage(
+                region.DstOffsets.Element1 = new Silk.NET.Vulkan.Offset3D { X= (int)mipWidth, Y = (int)mipHeight, Z = (int)mipDepth };
+                _vk.CmdBlitImage(
                     _cb,
-                    deviceImage, VkImageLayout.TransferSrcOptimal,
-                    deviceImage, VkImageLayout.TransferDstOptimal,
+                    deviceImage, Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal,
+                    deviceImage, Silk.NET.Vulkan.ImageLayout.TransferDstOptimal,
                     1, &region,
                     _gd.GetFormatFilter(vkTex.VkFormat));
 
@@ -1145,50 +1335,53 @@ namespace Veldrid.Vk
 
             if ((vkTex.Usage & TextureUsage.Sampled) != 0)
             {
-                vkTex.TransitionImageLayoutNonmatching(_cb, 0, vkTex.MipLevels, 0, layerCount, VkImageLayout.ShaderReadOnlyOptimal);
+                vkTex.TransitionImageLayoutNonmatching(_cb, 0, vkTex.MipLevels, 0, layerCount, Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal);
             }
         }
 
         [Conditional("DEBUG")]
         private void DebugFullPipelineBarrier()
         {
-            VkMemoryBarrier memoryBarrier = VkMemoryBarrier.New();
-            memoryBarrier.srcAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT |
-                   VK_ACCESS_INDEX_READ_BIT |
-                   VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT |
-                   VK_ACCESS_UNIFORM_READ_BIT |
-                   VK_ACCESS_INPUT_ATTACHMENT_READ_BIT |
-                   VK_ACCESS_SHADER_READ_BIT |
-                   VK_ACCESS_SHADER_WRITE_BIT |
-                   VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                   VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                   VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-                   VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-                   VK_ACCESS_TRANSFER_READ_BIT |
-                   VK_ACCESS_TRANSFER_WRITE_BIT |
-                   VK_ACCESS_HOST_READ_BIT |
-                   VK_ACCESS_HOST_WRITE_BIT;
-            memoryBarrier.dstAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT |
-                   VK_ACCESS_INDEX_READ_BIT |
-                   VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT |
-                   VK_ACCESS_UNIFORM_READ_BIT |
-                   VK_ACCESS_INPUT_ATTACHMENT_READ_BIT |
-                   VK_ACCESS_SHADER_READ_BIT |
-                   VK_ACCESS_SHADER_WRITE_BIT |
-                   VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                   VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                   VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-                   VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-                   VK_ACCESS_TRANSFER_READ_BIT |
-                   VK_ACCESS_TRANSFER_WRITE_BIT |
-                   VK_ACCESS_HOST_READ_BIT |
-                   VK_ACCESS_HOST_WRITE_BIT;
+            var memoryBarrier = new Silk.NET.Vulkan.MemoryBarrier();
+            memoryBarrier.SType = Silk.NET.Vulkan.StructureType.MemoryBarrier;
 
-            vkCmdPipelineBarrier(
+            memoryBarrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessIndirectCommandReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessIndexReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessVertexAttributeReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessUniformReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessInputAttachmentReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessShaderReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessShaderWriteBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessColorAttachmentReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessColorAttachmentWriteBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessDepthStencilAttachmentReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessDepthStencilAttachmentWriteBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessTransferReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessTransferWriteBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessHostReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessHostWriteBit;
+
+            memoryBarrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessIndirectCommandReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessIndexReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessVertexAttributeReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessUniformReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessInputAttachmentReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessShaderReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessShaderWriteBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessColorAttachmentReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessColorAttachmentWriteBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessDepthStencilAttachmentReadBit |
+                  Silk.NET.Vulkan.AccessFlags.AccessDepthStencilAttachmentWriteBit |
+                  Silk.NET.Vulkan.AccessFlags.AccessTransferReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessTransferWriteBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessHostReadBit |
+                   Silk.NET.Vulkan.AccessFlags.AccessHostWriteBit;
+
+            _vk.CmdPipelineBarrier(
                 _cb,
-                VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // srcStageMask
-                VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // dstStageMask
-                VkDependencyFlags.None,
+                Silk.NET.Vulkan.PipelineStageFlags.PipelineStageAllCommandsBit, // srcStageMask
+                 Silk.NET.Vulkan.PipelineStageFlags.PipelineStageAllCommandsBit, // dstStageMask
+                0,
                 1,                                  // memoryBarrierCount
                 &memoryBarrier,                     // pMemoryBarriers
                 0, null,
@@ -1232,10 +1425,11 @@ namespace Veldrid.Vk
 
         private protected override void PushDebugGroupCore(string name)
         {
-            vkCmdDebugMarkerBeginEXT_t func = _gd.MarkerBegin;
+            vkCmdDebugMarkerBeginEXT_t  func = _gd.MarkerBegin;
             if (func == null) { return; }
 
-            VkDebugMarkerMarkerInfoEXT markerInfo = VkDebugMarkerMarkerInfoEXT.New();
+           Silk.NET.Vulkan.DebugMarkerMarkerInfoEXT markerInfo = new Silk.NET.Vulkan.DebugMarkerMarkerInfoEXT();
+            markerInfo.SType = Silk.NET.Vulkan.StructureType.DebugMarkerMarkerInfoExt;
 
             int byteCount = Encoding.UTF8.GetByteCount(name);
             byte* utf8Ptr = stackalloc byte[byteCount + 1];
@@ -1245,7 +1439,7 @@ namespace Veldrid.Vk
             }
             utf8Ptr[byteCount] = 0;
 
-            markerInfo.pMarkerName = utf8Ptr;
+            markerInfo.PMarkerName = utf8Ptr;
 
             func(_cb, &markerInfo);
         }
@@ -1263,7 +1457,8 @@ namespace Veldrid.Vk
             vkCmdDebugMarkerInsertEXT_t func = _gd.MarkerInsert;
             if (func == null) { return; }
 
-            VkDebugMarkerMarkerInfoEXT markerInfo = VkDebugMarkerMarkerInfoEXT.New();
+             Silk.NET.Vulkan.DebugMarkerMarkerInfoEXT markerInfo = new Silk.NET.Vulkan.DebugMarkerMarkerInfoEXT();
+            markerInfo.SType = Silk.NET.Vulkan.StructureType.DebugMarkerMarkerInfoExt;
 
             int byteCount = Encoding.UTF8.GetByteCount(name);
             byte* utf8Ptr = stackalloc byte[byteCount + 1];
@@ -1273,7 +1468,7 @@ namespace Veldrid.Vk
             }
             utf8Ptr[byteCount] = 0;
 
-            markerInfo.pMarkerName = utf8Ptr;
+            markerInfo.PMarkerName = utf8Ptr;
 
             func(_cb, &markerInfo);
         }
@@ -1288,7 +1483,7 @@ namespace Veldrid.Vk
             if (!_destroyed)
             {
                 _destroyed = true;
-                vkDestroyCommandPool(_gd.Device, _pool, null);
+                _vk.DestroyCommandPool(_gd.Device, _pool, null);
 
                 Debug.Assert(_submittedStagingInfos.Count == 0);
 
@@ -1357,7 +1552,9 @@ namespace Veldrid.Vk
                 throw new Exception("There is no pipeline given.");
             }
 
-            vkCmdPushConstants(_cb, _currentGraphicsPipeline.PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeInBytes, source.ToPointer());
+            _vk.CmdPushConstants(_cb, _currentGraphicsPipeline.PipelineLayout, Silk.NET.Vulkan.ShaderStageFlags.ShaderStageVertexBit, 0, sizeInBytes, source.ToPointer());
         }
+
+  
     }
 }

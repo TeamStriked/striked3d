@@ -1,6 +1,4 @@
-﻿using Vulkan;
-using static Vulkan.VulkanNative;
-using static Veldrid.Vk.VulkanUtil;
+﻿using static Veldrid.Vk.VulkanUtil;
 using System.Diagnostics;
 using System;
 
@@ -9,9 +7,10 @@ namespace Veldrid.Vk
     internal unsafe class VkTexture : Texture
     {
         private readonly VkGraphicsDevice _gd;
-        private readonly VkImage _optimalImage;
+        private readonly Silk.NET.Vulkan.Vk _vk;
+        private readonly Silk.NET.Vulkan.Image _optimalImage;
         private readonly VkMemoryBlock _memoryBlock;
-        private readonly Vulkan.VkBuffer _stagingBuffer;
+        private readonly Silk.NET.Vulkan.Buffer _stagingBuffer;
         private PixelFormat _format; // Static for regular images -- may change for shared staging images
         private readonly uint _actualImageArrayLayers;
         private bool _destroyed;
@@ -41,14 +40,14 @@ namespace Veldrid.Vk
 
         public override bool IsDisposed => _destroyed;
 
-        public VkImage OptimalDeviceImage => _optimalImage;
-        public Vulkan.VkBuffer StagingBuffer => _stagingBuffer;
+        public Silk.NET.Vulkan.Image OptimalDeviceImage => _optimalImage;
+        public Silk.NET.Vulkan.Buffer StagingBuffer => _stagingBuffer;
         public VkMemoryBlock Memory => _memoryBlock;
 
-        public VkFormat VkFormat { get; }
-        public VkSampleCountFlags VkSampleCount { get; }
+        public Silk.NET.Vulkan.Format VkFormat { get; }
+        public Silk.NET.Vulkan.SampleCountFlags VkSampleCount { get; }
 
-        private VkImageLayout[] _imageLayouts;
+        private Silk.NET.Vulkan.ImageLayout[] _imageLayouts;
         private bool _isSwapchainTexture;
         private string _name;
 
@@ -58,6 +57,7 @@ namespace Veldrid.Vk
         internal VkTexture(VkGraphicsDevice gd, ref TextureDescription description)
         {
             _gd = gd;
+            _vk = gd.vk;
             _width = description.Width;
             _height = description.Height;
             _depth = description.Depth;
@@ -78,66 +78,76 @@ namespace Veldrid.Vk
 
             if (!isStaging)
             {
-                VkImageCreateInfo imageCI = VkImageCreateInfo.New();
-                imageCI.mipLevels = MipLevels;
-                imageCI.arrayLayers = _actualImageArrayLayers;
-                imageCI.imageType = VkFormats.VdToVkTextureType(Type);
-                imageCI.extent.width = Width;
-                imageCI.extent.height = Height;
-                imageCI.extent.depth = Depth;
-                imageCI.initialLayout = VkImageLayout.Preinitialized;
-                imageCI.usage = VkFormats.VdToVkTextureUsage(Usage);
-                imageCI.tiling = isStaging ? VkImageTiling.Linear : VkImageTiling.Optimal;
-                imageCI.format = VkFormat;
-                imageCI.flags = VkImageCreateFlags.MutableFormat;
+                Silk.NET.Vulkan.ImageCreateInfo imageCI = new Silk.NET.Vulkan.ImageCreateInfo();
+                imageCI.SType = Silk.NET.Vulkan.StructureType.ImageCreateInfo;
 
-                imageCI.samples = VkSampleCount;
+                imageCI.MipLevels = MipLevels;
+                imageCI.ArrayLayers = _actualImageArrayLayers;
+                imageCI.ImageType = VkFormats.VdToVkTextureType(Type);
+                imageCI.Extent = new Silk.NET.Vulkan.Extent3D();
+                imageCI.Extent.Width = Width;
+                imageCI.Extent.Height = Height;
+                imageCI.Extent.Depth = Depth;
+                imageCI.InitialLayout = Silk.NET.Vulkan.ImageLayout.Preinitialized;
+                imageCI.Usage = VkFormats.VdToVkTextureUsage(Usage);
+                imageCI.Tiling = isStaging ? Silk.NET.Vulkan.ImageTiling.Linear : Silk.NET.Vulkan.ImageTiling.Optimal;
+                imageCI.Format = VkFormat;
+                imageCI.Flags = Silk.NET.Vulkan.ImageCreateFlags.ImageCreateMutableFormatBit;
+
+                imageCI.Samples = VkSampleCount;
                 if (isCubemap)
                 {
-                    imageCI.flags |= VkImageCreateFlags.CubeCompatible;
+                    imageCI.Flags |= Silk.NET.Vulkan.ImageCreateFlags.ImageCreateCubeCompatibleBit;
                 }
 
                 uint subresourceCount = MipLevels * _actualImageArrayLayers * Depth;
-                VkResult result = vkCreateImage(gd.Device, ref imageCI, null, out _optimalImage);
+                var result = _vk.CreateImage(gd.Device, &imageCI, null, out _optimalImage);
                 CheckResult(result);
 
-                VkMemoryRequirements memoryRequirements;
+                Silk.NET.Vulkan.MemoryRequirements memoryRequirements = new Silk.NET.Vulkan.MemoryRequirements();
+                
                 bool prefersDedicatedAllocation;
                 if (_gd.GetImageMemoryRequirements2 != null)
                 {
-                    VkImageMemoryRequirementsInfo2KHR memReqsInfo2 = VkImageMemoryRequirementsInfo2KHR.New();
-                    memReqsInfo2.image = _optimalImage;
-                    VkMemoryRequirements2KHR memReqs2 = VkMemoryRequirements2KHR.New();
-                    VkMemoryDedicatedRequirementsKHR dedicatedReqs = VkMemoryDedicatedRequirementsKHR.New();
-                    memReqs2.pNext = &dedicatedReqs;
+                    Silk.NET.Vulkan.ImageMemoryRequirementsInfo2KHR memReqsInfo2 = new Silk.NET.Vulkan.ImageMemoryRequirementsInfo2KHR();
+                    memReqsInfo2.Image = _optimalImage;
+                    memReqsInfo2.SType = Silk.NET.Vulkan.StructureType.ImageMemoryRequirementsInfo2Khr;
+
+                    Silk.NET.Vulkan.MemoryRequirements2KHR memReqs2 = new Silk.NET.Vulkan.MemoryRequirements2KHR();
+                    memReqs2.SType = Silk.NET.Vulkan.StructureType.MemoryRequirements2Khr;
+
+                    Silk.NET.Vulkan.MemoryDedicatedRequirementsKHR dedicatedReqs = new Silk.NET.Vulkan.MemoryDedicatedRequirementsKHR();
+                    dedicatedReqs.SType = Silk.NET.Vulkan.StructureType.MemoryDedicatedRequirementsKhr;
+
+                    memReqs2.PNext = &dedicatedReqs;
                     _gd.GetImageMemoryRequirements2(_gd.Device, &memReqsInfo2, &memReqs2);
-                    memoryRequirements = memReqs2.memoryRequirements;
-                    prefersDedicatedAllocation = dedicatedReqs.prefersDedicatedAllocation || dedicatedReqs.requiresDedicatedAllocation;
+                    memoryRequirements = memReqs2.MemoryRequirements;
+                    prefersDedicatedAllocation = dedicatedReqs.PrefersDedicatedAllocation || dedicatedReqs.RequiresDedicatedAllocation;
                 }
                 else
                 {
-                    vkGetImageMemoryRequirements(gd.Device, _optimalImage, out memoryRequirements);
+                    _vk.GetImageMemoryRequirements(gd.Device, _optimalImage, out memoryRequirements);
                     prefersDedicatedAllocation = false;
                 }
 
                 VkMemoryBlock memoryToken = gd.MemoryManager.Allocate(
                     gd.PhysicalDeviceMemProperties,
-                    memoryRequirements.memoryTypeBits,
-                    VkMemoryPropertyFlags.DeviceLocal,
+                    memoryRequirements.MemoryTypeBits,
+                    Silk.NET.Vulkan.MemoryPropertyFlags.MemoryPropertyDeviceLocalBit,
                     false,
-                    memoryRequirements.size,
-                    memoryRequirements.alignment,
+                    memoryRequirements.Size,
+                    memoryRequirements.Alignment,
                     prefersDedicatedAllocation,
                     _optimalImage,
-                    Vulkan.VkBuffer.Null);
+                    default);
                 _memoryBlock = memoryToken;
-                result = vkBindImageMemory(gd.Device, _optimalImage, _memoryBlock.DeviceMemory, _memoryBlock.Offset);
+                result = _vk.BindImageMemory(gd.Device, _optimalImage, _memoryBlock.DeviceMemory, _memoryBlock.Offset);
                 CheckResult(result);
 
-                _imageLayouts = new VkImageLayout[subresourceCount];
+                _imageLayouts = new Silk.NET.Vulkan.ImageLayout[subresourceCount];
                 for (int i = 0; i < _imageLayouts.Length; i++)
                 {
-                    _imageLayouts[i] = VkImageLayout.Preinitialized;
+                    _imageLayouts[i] = Silk.NET.Vulkan.ImageLayout.Preinitialized;
                 }
             }
             else // isStaging
@@ -160,49 +170,58 @@ namespace Veldrid.Vk
                 }
                 stagingSize *= ArrayLayers;
 
-                VkBufferCreateInfo bufferCI = VkBufferCreateInfo.New();
-                bufferCI.usage = VkBufferUsageFlags.TransferSrc | VkBufferUsageFlags.TransferDst;
-                bufferCI.size = stagingSize;
-                VkResult result = vkCreateBuffer(_gd.Device, ref bufferCI, null, out _stagingBuffer);
+                Silk.NET.Vulkan.BufferCreateInfo bufferCI = new Silk.NET.Vulkan.BufferCreateInfo();
+                bufferCI.
+                    Usage = Silk.NET.Vulkan.BufferUsageFlags.BufferUsageTransferSrcBit | Silk.NET.Vulkan.BufferUsageFlags.BufferUsageTransferDstBit;
+                bufferCI.Size = stagingSize;
+                bufferCI.SType = Silk.NET.Vulkan.StructureType.BufferCreateInfo;
+
+                var result = _vk.CreateBuffer(_gd.Device, &bufferCI, null, out _stagingBuffer);
                 CheckResult(result);
 
-                VkMemoryRequirements bufferMemReqs;
+                Silk.NET.Vulkan.MemoryRequirements bufferMemReqs;
                 bool prefersDedicatedAllocation;
                 if (_gd.GetBufferMemoryRequirements2 != null)
                 {
-                    VkBufferMemoryRequirementsInfo2KHR memReqInfo2 = VkBufferMemoryRequirementsInfo2KHR.New();
-                    memReqInfo2.buffer = _stagingBuffer;
-                    VkMemoryRequirements2KHR memReqs2 = VkMemoryRequirements2KHR.New();
-                    VkMemoryDedicatedRequirementsKHR dedicatedReqs = VkMemoryDedicatedRequirementsKHR.New();
-                    memReqs2.pNext = &dedicatedReqs;
+                    Silk.NET.Vulkan.BufferMemoryRequirementsInfo2KHR memReqInfo2 = new Silk.NET.Vulkan.BufferMemoryRequirementsInfo2KHR();
+                    memReqInfo2.SType = Silk.NET.Vulkan.StructureType.BufferMemoryRequirementsInfo2Khr;
+
+                    memReqInfo2.Buffer = _stagingBuffer;
+                    Silk.NET.Vulkan.MemoryRequirements2KHR memReqs2 = new Silk.NET.Vulkan.MemoryRequirements2KHR();
+                    memReqs2.SType = Silk.NET.Vulkan.StructureType.MemoryRequirements2Khr;
+
+                    Silk.NET.Vulkan.MemoryDedicatedRequirementsKHR dedicatedReqs = new Silk.NET.Vulkan.MemoryDedicatedRequirementsKHR();
+                    dedicatedReqs.SType = Silk.NET.Vulkan.StructureType.MemoryDedicatedRequirementsKhr;
+                    memReqs2.PNext = &dedicatedReqs;
                     _gd.GetBufferMemoryRequirements2(_gd.Device, &memReqInfo2, &memReqs2);
-                    bufferMemReqs = memReqs2.memoryRequirements;
-                    prefersDedicatedAllocation = dedicatedReqs.prefersDedicatedAllocation || dedicatedReqs.requiresDedicatedAllocation;
+                    bufferMemReqs = memReqs2.MemoryRequirements;
+                    prefersDedicatedAllocation = dedicatedReqs.PrefersDedicatedAllocation || dedicatedReqs.RequiresDedicatedAllocation;
                 }
                 else
                 {
-                    vkGetBufferMemoryRequirements(gd.Device, _stagingBuffer, out bufferMemReqs);
+                    _vk.GetBufferMemoryRequirements(gd.Device, _stagingBuffer, out bufferMemReqs);
                     prefersDedicatedAllocation = false;
                 }
 
                 // Use "host cached" memory when available, for better performance of GPU -> CPU transfers
-                var propertyFlags = VkMemoryPropertyFlags.HostVisible | VkMemoryPropertyFlags.HostCoherent | VkMemoryPropertyFlags.HostCached;
-                if (!TryFindMemoryType(_gd.PhysicalDeviceMemProperties, bufferMemReqs.memoryTypeBits, propertyFlags, out _))
+                var propertyFlags = Silk.NET.Vulkan.MemoryPropertyFlags.MemoryPropertyHostVisibleBit | Silk.NET.Vulkan.MemoryPropertyFlags.MemoryPropertyHostCoherentBit
+                    | Silk.NET.Vulkan.MemoryPropertyFlags.MemoryPropertyHostCachedBit;
+                if (!TryFindMemoryType(_gd.PhysicalDeviceMemProperties, bufferMemReqs.MemoryTypeBits, propertyFlags, out _))
                 {
-                    propertyFlags ^= VkMemoryPropertyFlags.HostCached;
+                    propertyFlags ^= Silk.NET.Vulkan.MemoryPropertyFlags.MemoryPropertyHostCachedBit;
                 }
                 _memoryBlock = _gd.MemoryManager.Allocate(
                     _gd.PhysicalDeviceMemProperties,
-                    bufferMemReqs.memoryTypeBits,
+                    bufferMemReqs.MemoryTypeBits,
                     propertyFlags,
                     true,
-                    bufferMemReqs.size,
-                    bufferMemReqs.alignment,
+                    bufferMemReqs.Size,
+                    bufferMemReqs.Alignment,
                     prefersDedicatedAllocation,
-                    VkImage.Null,
+                    default,
                     _stagingBuffer);
 
-                result = vkBindBufferMemory(_gd.Device, _stagingBuffer, _memoryBlock.DeviceMemory, _memoryBlock.Offset);
+                result = _vk.BindBufferMemory(_gd.Device, _stagingBuffer, _memoryBlock.DeviceMemory, _memoryBlock.Offset);
                 CheckResult(result);
             }
 
@@ -218,13 +237,14 @@ namespace Veldrid.Vk
             uint height,
             uint mipLevels,
             uint arrayLayers,
-            VkFormat vkFormat,
+            Silk.NET.Vulkan.Format vkFormat,
             TextureUsage usage,
             TextureSampleCount sampleCount,
-            VkImage existingImage)
+            Silk.NET.Vulkan.Image existingImage)
         {
             Debug.Assert(width > 0 && height > 0);
             _gd = gd;
+            _vk = gd.vk;
             MipLevels = mipLevels;
             _width = width;
             _height = height;
@@ -237,7 +257,7 @@ namespace Veldrid.Vk
             SampleCount = sampleCount;
             VkSampleCount = VkFormats.VdToVkSampleCount(sampleCount);
             _optimalImage = existingImage;
-            _imageLayouts = new[] { VkImageLayout.Undefined };
+            _imageLayouts = new[] { Silk.NET.Vulkan.ImageLayout.Undefined };
             _isSwapchainTexture = true;
 
             ClearIfRenderTarget();
@@ -249,11 +269,11 @@ namespace Veldrid.Vk
             // If the image is going to be used as a render target, we need to clear the data before its first use.
             if ((Usage & TextureUsage.RenderTarget) != 0)
             {
-                _gd.ClearColorTexture(this, new VkClearColorValue(0, 0, 0, 0));
+                _gd.ClearColorTexture(this, new Silk.NET.Vulkan.ClearColorValue(0, 0, 0, 0));
             }
             else if ((Usage & TextureUsage.DepthStencil) != 0)
             {
-                _gd.ClearDepthTexture(this, new VkClearDepthStencilValue(0, 0));
+                _gd.ClearDepthTexture(this, new Silk.NET.Vulkan.ClearDepthStencilValue(0, 0));
             }
         }
 
@@ -261,27 +281,27 @@ namespace Veldrid.Vk
         {
             if ((Usage & TextureUsage.Sampled) != 0)
             {
-                _gd.TransitionImageLayout(this, VkImageLayout.ShaderReadOnlyOptimal);
+                _gd.TransitionImageLayout(this, Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal);
             }
         }
 
-        internal VkSubresourceLayout GetSubresourceLayout(uint subresource)
+        internal Silk.NET.Vulkan.SubresourceLayout GetSubresourceLayout(uint subresource)
         {
             bool staging = _stagingBuffer.Handle != 0;
             Util.GetMipLevelAndArrayLayer(this, subresource, out uint mipLevel, out uint arrayLayer);
             if (!staging)
             {
-                VkImageAspectFlags aspect = (Usage & TextureUsage.DepthStencil) == TextureUsage.DepthStencil
-                  ? (VkImageAspectFlags.Depth | VkImageAspectFlags.Stencil)
-                  : VkImageAspectFlags.Color;
-                VkImageSubresource imageSubresource = new VkImageSubresource
+                Silk.NET.Vulkan.ImageAspectFlags aspect = (Usage & TextureUsage.DepthStencil) == TextureUsage.DepthStencil
+                  ? (Silk.NET.Vulkan.ImageAspectFlags.ImageAspectDepthBit | Silk.NET.Vulkan.ImageAspectFlags.ImageAspectStencilBit)
+                  : Silk.NET.Vulkan.ImageAspectFlags.ImageAspectColorBit;
+                Silk.NET.Vulkan.ImageSubresource imageSubresource = new Silk.NET.Vulkan.ImageSubresource
                 {
-                    arrayLayer = arrayLayer,
-                    mipLevel = mipLevel,
-                    aspectMask = aspect,
+                    ArrayLayer = arrayLayer,
+                    MipLevel = mipLevel,
+                    AspectMask = aspect,
                 };
 
-                vkGetImageSubresourceLayout(_gd.Device, _optimalImage, ref imageSubresource, out VkSubresourceLayout layout);
+                _vk.GetImageSubresourceLayout(_gd.Device, _optimalImage, &imageSubresource, out Silk.NET.Vulkan.SubresourceLayout layout);
                 return layout;
             }
             else
@@ -291,33 +311,33 @@ namespace Veldrid.Vk
                 uint rowPitch = FormatHelpers.GetRowPitch(mipWidth, Format);
                 uint depthPitch = FormatHelpers.GetDepthPitch(rowPitch, mipHeight, Format);
 
-                VkSubresourceLayout layout = new VkSubresourceLayout()
+                Silk.NET.Vulkan.SubresourceLayout layout = new Silk.NET.Vulkan.SubresourceLayout()
                 {
-                    rowPitch = rowPitch,
-                    depthPitch = depthPitch,
-                    arrayPitch = depthPitch,
-                    size = depthPitch,
+                    RowPitch = rowPitch,
+                    DepthPitch = depthPitch,
+                    ArrayPitch = depthPitch,
+                    Size = depthPitch,
                 };
-                layout.offset = Util.ComputeSubresourceOffset(this, mipLevel, arrayLayer);
+                layout.Offset = Util.ComputeSubresourceOffset(this, mipLevel, arrayLayer);
 
                 return layout;
             }
         }
 
         internal void TransitionImageLayout(
-            VkCommandBuffer cb,
+            Silk.NET.Vulkan.CommandBuffer cb,
             uint baseMipLevel,
             uint levelCount,
             uint baseArrayLayer,
             uint layerCount,
-            VkImageLayout newLayout)
+            Silk.NET.Vulkan.ImageLayout newLayout)
         {
-            if (_stagingBuffer != Vulkan.VkBuffer.Null)
+            if (_stagingBuffer.Handle != default)
             {
                 return;
             }
 
-            VkImageLayout oldLayout = _imageLayouts[CalculateSubresource(baseMipLevel, baseArrayLayer)];
+            Silk.NET.Vulkan.ImageLayout oldLayout = _imageLayouts[CalculateSubresource(baseMipLevel, baseArrayLayer)];
 #if DEBUG
             for (uint level = 0; level < levelCount; level++)
             {
@@ -332,18 +352,19 @@ namespace Veldrid.Vk
 #endif
             if (oldLayout != newLayout)
             {
-                VkImageAspectFlags aspectMask;
+                Silk.NET.Vulkan.ImageAspectFlags aspectMask;
                 if ((Usage & TextureUsage.DepthStencil) != 0)
                 {
                     aspectMask = FormatHelpers.IsStencilFormat(Format)
-                        ? VkImageAspectFlags.Depth | VkImageAspectFlags.Stencil
-                        : VkImageAspectFlags.Depth;
+                        ? Silk.NET.Vulkan.ImageAspectFlags.ImageAspectDepthBit | Silk.NET.Vulkan.ImageAspectFlags.ImageAspectStencilBit
+                        : Silk.NET.Vulkan.ImageAspectFlags.ImageAspectDepthBit;
                 }
                 else
                 {
-                    aspectMask = VkImageAspectFlags.Color;
+                    aspectMask = Silk.NET.Vulkan.ImageAspectFlags.ImageAspectColorBit;
                 }
                 VulkanUtil.TransitionImageLayout(
+                    _vk,
                     cb,
                     OptimalDeviceImage,
                     baseMipLevel,
@@ -365,14 +386,14 @@ namespace Veldrid.Vk
         }
 
         internal void TransitionImageLayoutNonmatching(
-            VkCommandBuffer cb,
+            Silk.NET.Vulkan.CommandBuffer cb,
             uint baseMipLevel,
             uint levelCount,
             uint baseArrayLayer,
             uint layerCount,
-            VkImageLayout newLayout)
+            Silk.NET.Vulkan.ImageLayout newLayout)
         {
-            if (_stagingBuffer != Vulkan.VkBuffer.Null)
+            if (_stagingBuffer.Handle != default)
             {
                 return;
             }
@@ -382,22 +403,23 @@ namespace Veldrid.Vk
                 for (uint layer = baseArrayLayer; layer < baseArrayLayer + layerCount; layer++)
                 {
                     uint subresource = CalculateSubresource(level, layer);
-                    VkImageLayout oldLayout = _imageLayouts[subresource];
+                    Silk.NET.Vulkan.ImageLayout oldLayout = _imageLayouts[subresource];
 
                     if (oldLayout != newLayout)
                     {
-                        VkImageAspectFlags aspectMask;
+                        Silk.NET.Vulkan.ImageAspectFlags aspectMask;
                         if ((Usage & TextureUsage.DepthStencil) != 0)
                         {
                             aspectMask = FormatHelpers.IsStencilFormat(Format)
-                                ? VkImageAspectFlags.Depth | VkImageAspectFlags.Stencil
-                                : VkImageAspectFlags.Depth;
+                                ? Silk.NET.Vulkan.ImageAspectFlags.ImageAspectDepthBit | Silk.NET.Vulkan.ImageAspectFlags.ImageAspectStencilBit
+                                : Silk.NET.Vulkan.ImageAspectFlags.ImageAspectDepthBit;
                         }
                         else
                         {
-                            aspectMask = VkImageAspectFlags.Color;
+                            aspectMask = Silk.NET.Vulkan.ImageAspectFlags.ImageAspectColorBit;
                         }
                         VulkanUtil.TransitionImageLayout(
+                            _vk,
                             cb,
                             OptimalDeviceImage,
                             level,
@@ -414,7 +436,7 @@ namespace Veldrid.Vk
             }
         }
 
-        internal VkImageLayout GetImageLayout(uint mipLevel, uint arrayLayer)
+        internal Silk.NET.Vulkan.ImageLayout GetImageLayout(uint mipLevel, uint arrayLayer)
         {
             return _imageLayouts[CalculateSubresource(mipLevel, arrayLayer)];
         }
@@ -431,7 +453,7 @@ namespace Veldrid.Vk
 
         internal void SetStagingDimensions(uint width, uint height, uint depth, PixelFormat format)
         {
-            Debug.Assert(_stagingBuffer != Vulkan.VkBuffer.Null);
+            Debug.Assert(_stagingBuffer.Handle != default);
             Debug.Assert(Usage == TextureUsage.Staging);
             _width = width;
             _height = height;
@@ -455,11 +477,11 @@ namespace Veldrid.Vk
                 bool isStaging = (Usage & TextureUsage.Staging) == TextureUsage.Staging;
                 if (isStaging)
                 {
-                    vkDestroyBuffer(_gd.Device, _stagingBuffer, null);
+                   _vk.DestroyBuffer(_gd.Device, _stagingBuffer, null);
                 }
                 else
                 {
-                    vkDestroyImage(_gd.Device, _optimalImage, null);
+                    _vk.DestroyImage(_gd.Device, _optimalImage, null);
                 }
 
                 if (_memoryBlock.DeviceMemory.Handle != 0)
@@ -469,7 +491,7 @@ namespace Veldrid.Vk
             }
         }
 
-        internal void SetImageLayout(uint mipLevel, uint arrayLayer, VkImageLayout layout)
+        internal void SetImageLayout(uint mipLevel, uint arrayLayer, Silk.NET.Vulkan.ImageLayout layout)
         {
             _imageLayouts[CalculateSubresource(mipLevel, arrayLayer)] = layout;
         }

@@ -1,5 +1,5 @@
 ﻿using Silk.NET.Input;
-using Silk.NET.Maths;
+using Striked3D.Types;
 using Silk.NET.Windowing;
 using Silk.NET.Windowing.Extensions.Veldrid;
 using Striked3D.Graphics;
@@ -13,6 +13,9 @@ using WindowSilkHandle = Silk.NET.Windowing.IWindow;
 
 namespace Striked3D.Core.Window
 {
+    /// <summary>
+    /// The root window or first window of the application
+    /// </summary>
     public class RootWindow : IWindow, IDisposable
     {
         private readonly ServiceRegistry _serviceRegistry;
@@ -23,10 +26,9 @@ namespace Striked3D.Core.Window
         public event IWindow.OnResizeHandler OnResize;
         public event IWindow.OnLoadHandler OnLoad;
 
-        private readonly Viewport _rootViewport = new Viewport();
-        public Viewport RootViewport => _rootViewport;
+        public Viewport RootViewport { get; } = new Viewport();
 
-        public Veldrid.GraphicsDevice CreateDevice()
+        public Veldrid.GraphicsDevice? CreateDevice()
         {
 
 #if (DEBUG)
@@ -46,6 +48,7 @@ namespace Striked3D.Core.Window
                 SyncToVerticalBlank = VSync,
                 ResourceBindingModel = Veldrid.ResourceBindingModel.Improved,
                 Debug = debugMode,
+                SwapchainDepthFormat = Veldrid.PixelFormat.R16_UNorm,
                 SwapchainSrgbFormat = true,
 
             }, PlatformInfo.preferredBackend);
@@ -56,6 +59,7 @@ namespace Striked3D.Core.Window
             return _nativeWindow?.CreateInput();
         }
 
+        /// <inheritdoc />
         public ServiceRegistry Services => _serviceRegistry;
 
         public bool VSync
@@ -66,8 +70,8 @@ namespace Striked3D.Core.Window
 
         public Vector2D<int> Size
         {
-            get => _nativeWindow.Size;
-            set => _nativeWindow.Size = value;
+            get => new Vector2D<int>(_nativeWindow.Size.X, _nativeWindow.Size.Y);
+            set => _nativeWindow.Size = new Silk.NET.Maths.Vector2D<int>(_nativeWindow.Size.X, _nativeWindow.Size.Y);
         }
 
         public WindowState State
@@ -78,8 +82,8 @@ namespace Striked3D.Core.Window
 
         public Vector2D<int> Position
         {
-            get => _nativeWindow.Position;
-            set => _nativeWindow.Position = value;
+            get => new Vector2D<int>(_nativeWindow.Position.X, _nativeWindow.Position.Y);
+            set => _nativeWindow.Position = new Silk.NET.Maths.Vector2D<int>(_nativeWindow.Position.X, _nativeWindow.Position.Y);
         }
 
         public string Title
@@ -93,8 +97,8 @@ namespace Striked3D.Core.Window
             _serviceRegistry = new ServiceRegistry();
 
             WindowOptions opts = WindowOptions.Default;
-            opts.Position = new Vector2D<int>(0, 0);
-            opts.Size = new Vector2D<int>(800, 600);
+            opts.Position = new Silk.NET.Maths.Vector2D<int>(0, 0);
+            opts.Size = new Silk.NET.Maths.Vector2D<int>(800, 600);
 
             opts.Title = "Window";
             opts.API = Platform.PlatformInfo.preferredBackend.ToGraphicsAPI();
@@ -112,10 +116,10 @@ namespace Striked3D.Core.Window
             _nativeWindow.VSync = false;
         }
 
-        private void _OnResize(Vector2D<int> obj)
+        private void _OnResize(Silk.NET.Maths.Vector2D<int> obj)
         {
-            RootViewport.Size = new Vector2D<float>(Size.X, Size.Y);
-            OnResize?.Invoke(obj);
+            RootViewport.Size = new Vector2D<float>(obj.X, obj.Y);
+            OnResize?.Invoke(new Vector2D<int>(obj.X, obj.Y));
         }
 
         public void Run()
@@ -140,10 +144,13 @@ namespace Striked3D.Core.Window
 
             updateTime = watch.Elapsed.TotalMilliseconds;
 
+            var nodeService = this.Services.Get<ScreneTreeService>();
+
             if (totalDelta > 1.0)
             {
+                var objects = nodeService.TotalChilds();
                 string nt = frameTimer.CurrentAverageFramesPerSecond.ToString("000.0 fps / ") + frameTimer.CurrentAverageFrameTimeMilliseconds.ToString("#00.00 ms");
-                Console.WriteLine(nt + " - Update time: " + updateTime + " - Render time " + renderTime);
+                Console.WriteLine(nt + " - Update time: " + updateTime + " - Render time " + renderTime + " - objects: " + objects);
                 totalDelta = 0;
             }
             else
@@ -178,7 +185,7 @@ namespace Striked3D.Core.Window
             }
 
             ScreneTreeService sceneTree = Services.Get<ScreneTreeService>();
-            sceneTree?.AddNode(_rootViewport);
+            sceneTree?.AddNode(RootViewport);
             OnLoad();
         }
 

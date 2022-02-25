@@ -1101,7 +1101,7 @@ namespace Veldrid
         /// <returns>A new <see cref="GraphicsDevice"/> using the Vulkan API.</returns>
         public static GraphicsDevice CreateVulkan(GraphicsDeviceOptions options)
         {
-            return new Vk.VkGraphicsDevice(options, null);
+            return new Vk.VkGraphicsDevice(Silk.NET.Vulkan.Vk.GetApi(), options, null);
         }
 
         /// <summary>
@@ -1112,7 +1112,7 @@ namespace Veldrid
         /// <returns>A new <see cref="GraphicsDevice"/> using the Vulkan API.</returns>
         public static GraphicsDevice CreateVulkan(GraphicsDeviceOptions options, VulkanDeviceOptions vkOptions)
         {
-            return new Vk.VkGraphicsDevice(options, null, vkOptions);
+            return new Vk.VkGraphicsDevice(Silk.NET.Vulkan.Vk.GetApi(), options, null, vkOptions);
         }
 
         /// <summary>
@@ -1123,7 +1123,7 @@ namespace Veldrid
         /// <returns>A new <see cref="GraphicsDevice"/> using the Vulkan API.</returns>
         public static GraphicsDevice CreateVulkan(GraphicsDeviceOptions options, SwapchainDescription swapchainDescription)
         {
-            return new Vk.VkGraphicsDevice(options, swapchainDescription);
+            return new Vk.VkGraphicsDevice(Silk.NET.Vulkan.Vk.GetApi(), options, swapchainDescription);
         }
 
         /// <summary>
@@ -1138,7 +1138,7 @@ namespace Veldrid
             SwapchainDescription swapchainDescription,
             VulkanDeviceOptions vkOptions)
         {
-            return new Vk.VkGraphicsDevice(options, swapchainDescription, vkOptions);
+            return new Vk.VkGraphicsDevice(Silk.NET.Vulkan.Vk.GetApi(), options, swapchainDescription, vkOptions);
         }
 
         /// <summary>
@@ -1158,7 +1158,7 @@ namespace Veldrid
                 options.SyncToVerticalBlank,
                 options.SwapchainSrgbFormat);
 
-            return new Vk.VkGraphicsDevice(options, scDesc);
+            return new Vk.VkGraphicsDevice(Silk.NET.Vulkan.Vk.GetApi(), options, scDesc);
         }
 #endif
 

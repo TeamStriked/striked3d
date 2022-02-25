@@ -5,43 +5,44 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Vulkan;
 using static Veldrid.Vk.VulkanUtil;
-using static Vulkan.VulkanNative;
+using Silk.NET.Vulkan.Extensions.KHR;
 
 namespace Veldrid.Vk
 {
     internal unsafe class VkGraphicsDevice : GraphicsDevice
     {
+        public const uint MaxPhysicalDeviceNameSize = 256;
+
         private static readonly FixedUtf8String s_name = "Veldrid-VkGraphicsDevice";
         private static readonly Lazy<bool> s_isSupported = new Lazy<bool>(CheckIsSupported, isThreadSafe: true);
 
-        private VkInstance _instance;
-        private VkPhysicalDevice _physicalDevice;
+        private Silk.NET.Vulkan.Instance _instance;
+        private Silk.NET.Vulkan.PhysicalDevice _physicalDevice;
         private string _deviceName;
         private string _vendorName;
         private GraphicsApiVersion _apiVersion;
         private string _driverName;
         private string _driverInfo;
         private VkDeviceMemoryManager _memoryManager;
-        private VkPhysicalDeviceProperties _physicalDeviceProperties;
-        private VkPhysicalDeviceFeatures _physicalDeviceFeatures;
-        private VkPhysicalDeviceMemoryProperties _physicalDeviceMemProperties;
-        private VkDevice _device;
+        private Silk.NET.Vulkan.PhysicalDeviceProperties _physicalDeviceProperties;
+        private Silk.NET.Vulkan.PhysicalDeviceFeatures _physicalDeviceFeatures;
+        private Silk.NET.Vulkan.PhysicalDeviceMemoryProperties _physicalDeviceMemProperties;
+        private Silk.NET.Vulkan.Device _device;
         private uint _graphicsQueueIndex;
         private uint _presentQueueIndex;
-        private VkCommandPool _graphicsCommandPool;
+        private Silk.NET.Vulkan.CommandPool _graphicsCommandPool;
         private readonly object _graphicsCommandPoolLock = new object();
-        private VkQueue _graphicsQueue;
+        private Silk.NET.Vulkan.Queue _graphicsQueue;
         private readonly object _graphicsQueueLock = new object();
-        private VkDebugReportCallbackEXT _debugCallbackHandle;
-        private PFN_vkDebugReportCallbackEXT _debugCallbackFunc;
+        private Silk.NET.Vulkan.DebugReportCallbackEXT _debugCallbackHandle;
+        private Silk.NET.Vulkan.PfnDebugReportCallbackEXT _debugCallbackFunc;
         private bool _debugMarkerEnabled;
         private vkDebugMarkerSetObjectNameEXT_t _setObjectNameDelegate;
         private vkCmdDebugMarkerBeginEXT_t _markerBegin;
         private vkCmdDebugMarkerEndEXT_t _markerEnd;
         private vkCmdDebugMarkerInsertEXT_t _markerInsert;
-        private readonly ConcurrentDictionary<VkFormat, VkFilter> _filters = new ConcurrentDictionary<VkFormat, VkFilter>();
+        private readonly ConcurrentDictionary<Silk.NET.Vulkan.Format, Silk.NET.Vulkan.Filter> _filters = new ConcurrentDictionary<Silk.NET.Vulkan.Format, Silk.NET.Vulkan.Filter>();
         private readonly BackendInfoVulkan _vulkanInfo;
 
         private const int SharedCommandPoolCount = 4;
@@ -63,12 +64,12 @@ namespace Veldrid.Vk
         private readonly List<VkTexture> _availableStagingTextures = new List<VkTexture>();
         private readonly List<VkBuffer> _availableStagingBuffers = new List<VkBuffer>();
 
-        private readonly Dictionary<VkCommandBuffer, VkTexture> _submittedStagingTextures
-            = new Dictionary<VkCommandBuffer, VkTexture>();
-        private readonly Dictionary<VkCommandBuffer, VkBuffer> _submittedStagingBuffers
-            = new Dictionary<VkCommandBuffer, VkBuffer>();
-        private readonly Dictionary<VkCommandBuffer, SharedCommandPool> _submittedSharedCommandPools
-            = new Dictionary<VkCommandBuffer, SharedCommandPool>();
+        private readonly Dictionary<Silk.NET.Vulkan.CommandBuffer, VkTexture> _submittedStagingTextures
+            = new Dictionary<Silk.NET.Vulkan.CommandBuffer, VkTexture>();
+        private readonly Dictionary<Silk.NET.Vulkan.CommandBuffer, VkBuffer> _submittedStagingBuffers
+            = new Dictionary<Silk.NET.Vulkan.CommandBuffer, VkBuffer>();
+        private readonly Dictionary<Silk.NET.Vulkan.CommandBuffer, SharedCommandPool> _submittedSharedCommandPools
+            = new Dictionary<Silk.NET.Vulkan.CommandBuffer, SharedCommandPool>();
 
         public override string DeviceName => _deviceName;
 
@@ -94,11 +95,13 @@ namespace Veldrid.Vk
             return true;
         }
 
-        public VkInstance Instance => _instance;
-        public VkDevice Device => _device;
-        public VkPhysicalDevice PhysicalDevice => _physicalDevice;
-        public VkPhysicalDeviceMemoryProperties PhysicalDeviceMemProperties => _physicalDeviceMemProperties;
-        public VkQueue GraphicsQueue => _graphicsQueue;
+        private readonly Silk.NET.Vulkan.Vk _vk;
+        public Silk.NET.Vulkan.Vk vk => _vk;
+        public Silk.NET.Vulkan.Instance Instance => _instance;
+        public Silk.NET.Vulkan.Device Device => _device;
+        public Silk.NET.Vulkan.PhysicalDevice PhysicalDevice => _physicalDevice;
+        public Silk.NET.Vulkan.PhysicalDeviceMemoryProperties PhysicalDeviceMemProperties => _physicalDeviceMemProperties;
+        public Silk.NET.Vulkan.Queue GraphicsQueue => _graphicsQueue;
         public uint GraphicsQueueIndex => _graphicsQueueIndex;
         public uint PresentQueueIndex => _presentQueueIndex;
         public string DriverName => _driverName;
@@ -113,20 +116,40 @@ namespace Veldrid.Vk
         public vkCreateMetalSurfaceEXT_t CreateMetalSurfaceEXT => _createMetalSurfaceEXT;
 
         private readonly object _submittedFencesLock = new object();
-        private readonly ConcurrentQueue<Vulkan.VkFence> _availableSubmissionFences = new ConcurrentQueue<Vulkan.VkFence>();
+        private readonly ConcurrentQueue<Silk.NET.Vulkan.Fence> _availableSubmissionFences = new ConcurrentQueue<Silk.NET.Vulkan.Fence>();
         private readonly List<FenceSubmissionInfo> _submittedFences = new List<FenceSubmissionInfo>();
         private readonly VkSwapchain _mainSwapchain;
 
         private readonly List<FixedUtf8String> _surfaceExtensions = new List<FixedUtf8String>();
 
-        public VkGraphicsDevice(GraphicsDeviceOptions options, SwapchainDescription? scDesc)
-            : this(options, scDesc, new VulkanDeviceOptions()) { }
 
-        public VkGraphicsDevice(GraphicsDeviceOptions options, SwapchainDescription? scDesc, VulkanDeviceOptions vkOptions)
+        private KhrSwapchain _vkSwapchain;
+        public KhrSwapchain vkSwapchain => _vkSwapchain;
+
+
+        private KhrSurface _vkSurface;
+        public KhrSurface vkSurface => _vkSurface;
+
+
+        public VkGraphicsDevice(Silk.NET.Vulkan.Vk vk, GraphicsDeviceOptions options, SwapchainDescription? scDesc)
+            : this(vk, options, scDesc, new VulkanDeviceOptions())
         {
+        }
+
+        public VkGraphicsDevice(Silk.NET.Vulkan.Vk vk, GraphicsDeviceOptions options, SwapchainDescription? scDesc, VulkanDeviceOptions vkOptions)
+        {
+            this._vk = vk;
+
             CreateInstance(options.Debug, vkOptions);
 
-            VkSurfaceKHR surface = VkSurfaceKHR.Null;
+            Silk.NET.Vulkan.SurfaceKHR surface = new Silk.NET.Vulkan.SurfaceKHR();
+
+
+            if (!_vk.TryGetInstanceExtension(_instance, out _vkSurface))
+            {
+                throw new NotSupportedException("KHR_surface extension not found.");
+            }
+
             if (scDesc != null)
             {
                 surface = VkSurfaceUtil.CreateSurface(this, _instance, scDesc.Value.Source);
@@ -136,34 +159,40 @@ namespace Veldrid.Vk
             CreateLogicalDevice(surface, options.PreferStandardClipSpaceYDirection, vkOptions);
 
             _memoryManager = new VkDeviceMemoryManager(
+                _vk,
                 _device,
                 _physicalDevice,
-                _physicalDeviceProperties.limits.bufferImageGranularity,
+                _physicalDeviceProperties.Limits.BufferImageGranularity,
                 _getBufferMemoryRequirements2,
                 _getImageMemoryRequirements2);
 
             Features = new GraphicsDeviceFeatures(
                 computeShader: true,
-                geometryShader: _physicalDeviceFeatures.geometryShader,
-                tessellationShaders: _physicalDeviceFeatures.tessellationShader,
-                multipleViewports: _physicalDeviceFeatures.multiViewport,
+                geometryShader: _physicalDeviceFeatures.GeometryShader,
+                tessellationShaders: _physicalDeviceFeatures.TessellationShader,
+                multipleViewports: _physicalDeviceFeatures.MultiViewport,
                 samplerLodBias: true,
                 drawBaseVertex: true,
                 drawBaseInstance: true,
                 drawIndirect: true,
-                drawIndirectBaseInstance: _physicalDeviceFeatures.drawIndirectFirstInstance,
-                fillModeWireframe: _physicalDeviceFeatures.fillModeNonSolid,
-                samplerAnisotropy: _physicalDeviceFeatures.samplerAnisotropy,
-                depthClipDisable: _physicalDeviceFeatures.depthClamp,
+                drawIndirectBaseInstance: _physicalDeviceFeatures.DrawIndirectFirstInstance,
+                fillModeWireframe: _physicalDeviceFeatures.FillModeNonSolid,
+                samplerAnisotropy: _physicalDeviceFeatures.SamplerAnisotropy,
+                depthClipDisable: _physicalDeviceFeatures.DepthClamp,
                 texture1D: true,
-                independentBlend: _physicalDeviceFeatures.independentBlend,
+                independentBlend: _physicalDeviceFeatures.IndependentBlend,
                 structuredBuffer: true,
                 subsetTextureView: true,
                 commandListDebugMarkers: _debugMarkerEnabled,
                 bufferRangeBinding: true,
-                shaderFloat64: _physicalDeviceFeatures.shaderFloat64);
+                shaderFloat64: _physicalDeviceFeatures.ShaderFloat64);
 
             ResourceFactory = new VkResourceFactory(this);
+
+            if (!_vk.TryGetDeviceExtension(_instance, _vk.CurrentDevice.Value, out _vkSwapchain))
+            {
+                throw new NotSupportedException("KHR_swapchain extension not found.");
+            }
 
             if (scDesc != null)
             {
@@ -193,13 +222,13 @@ namespace Veldrid.Vk
         private void SubmitCommandList(
             CommandList cl,
             uint waitSemaphoreCount,
-            VkSemaphore* waitSemaphoresPtr,
+            Silk.NET.Vulkan.Semaphore* waitSemaphoresPtr,
             uint signalSemaphoreCount,
-            VkSemaphore* signalSemaphoresPtr,
+            Silk.NET.Vulkan.Semaphore* signalSemaphoresPtr,
             Fence fence)
         {
             VkCommandList vkCL = Util.AssertSubtype<CommandList, VkCommandList>(cl);
-            VkCommandBuffer vkCB = vkCL.CommandBuffer;
+            Silk.NET.Vulkan.CommandBuffer vkCB = vkCL.CommandBuffer;
 
             vkCL.CommandBufferSubmitted(vkCB);
             SubmitCommandBuffer(vkCL, vkCB, waitSemaphoreCount, waitSemaphoresPtr, signalSemaphoreCount, signalSemaphoresPtr, fence);
@@ -207,29 +236,31 @@ namespace Veldrid.Vk
 
         private void SubmitCommandBuffer(
             VkCommandList vkCL,
-            VkCommandBuffer vkCB,
+            Silk.NET.Vulkan.CommandBuffer vkCB,
             uint waitSemaphoreCount,
-            VkSemaphore* waitSemaphoresPtr,
+            Silk.NET.Vulkan.Semaphore* waitSemaphoresPtr,
             uint signalSemaphoreCount,
-            VkSemaphore* signalSemaphoresPtr,
+            Silk.NET.Vulkan.Semaphore* signalSemaphoresPtr,
             Fence fence)
         {
             CheckSubmittedFences();
 
             bool useExtraFence = fence != null;
-            VkSubmitInfo si = VkSubmitInfo.New();
-            si.commandBufferCount = 1;
-            si.pCommandBuffers = &vkCB;
-            VkPipelineStageFlags waitDstStageMask = VkPipelineStageFlags.ColorAttachmentOutput;
-            si.pWaitDstStageMask = &waitDstStageMask;
+            Silk.NET.Vulkan.SubmitInfo si = new Silk.NET.Vulkan.SubmitInfo();
+            si.SType = Silk.NET.Vulkan.StructureType.SubmitInfo;
 
-            si.pWaitSemaphores = waitSemaphoresPtr;
-            si.waitSemaphoreCount = waitSemaphoreCount;
-            si.pSignalSemaphores = signalSemaphoresPtr;
-            si.signalSemaphoreCount = signalSemaphoreCount;
+            si.CommandBufferCount = 1;
+            si.PCommandBuffers = &vkCB;
+            Silk.NET.Vulkan.PipelineStageFlags waitDstStageMask = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageColorAttachmentOutputBit;
+            si.PWaitDstStageMask = &waitDstStageMask;
 
-            Vulkan.VkFence vkFence = Vulkan.VkFence.Null;
-            Vulkan.VkFence submissionFence = Vulkan.VkFence.Null;
+            si.PWaitSemaphores = waitSemaphoresPtr;
+            si.WaitSemaphoreCount = waitSemaphoreCount;
+            si.PSignalSemaphores = signalSemaphoresPtr;
+            si.SignalSemaphoreCount = signalSemaphoreCount;
+
+            Silk.NET.Vulkan.Fence vkFence = new Silk.NET.Vulkan.Fence();
+            Silk.NET.Vulkan.Fence submissionFence = new Silk.NET.Vulkan.Fence();
             if (useExtraFence)
             {
                 vkFence = Util.AssertSubtype<Fence, VkFence>(fence).DeviceFence;
@@ -243,11 +274,11 @@ namespace Veldrid.Vk
 
             lock (_graphicsQueueLock)
             {
-                VkResult result = vkQueueSubmit(_graphicsQueue, 1, ref si, vkFence);
+                var result = _vk.QueueSubmit(_graphicsQueue, 1, &si, vkFence);
                 CheckResult(result);
                 if (useExtraFence)
                 {
-                    result = vkQueueSubmit(_graphicsQueue, 0, null, submissionFence);
+                    result =  _vk.QueueSubmit(_graphicsQueue, 0, null, submissionFence);
                     CheckResult(result);
                 }
             }
@@ -265,7 +296,7 @@ namespace Veldrid.Vk
                 for (int i = 0; i < _submittedFences.Count; i++)
                 {
                     FenceSubmissionInfo fsi = _submittedFences[i];
-                    if (vkGetFenceStatus(_device, fsi.Fence) == VkResult.Success)
+                    if (_vk.GetFenceStatus(_device, fsi.Fence) == Silk.NET.Vulkan.Result.Success)
                     {
                         CompleteFenceSubmission(fsi);
                         _submittedFences.RemoveAt(i);
@@ -281,10 +312,10 @@ namespace Veldrid.Vk
 
         private void CompleteFenceSubmission(FenceSubmissionInfo fsi)
         {
-            Vulkan.VkFence fence = fsi.Fence;
-            VkCommandBuffer completedCB = fsi.CommandBuffer;
+            Silk.NET.Vulkan.Fence fence = fsi.Fence;
+            Silk.NET.Vulkan.CommandBuffer completedCB = fsi.CommandBuffer;
             fsi.CommandList?.CommandBufferCompleted(completedCB);
-            VkResult resetResult = vkResetFences(_device, 1, ref fence);
+            var resetResult = _vk.ResetFences(_device, 1, &fence);
             CheckResult(resetResult);
             ReturnSubmissionFence(fence);
             lock (_stagingResourcesLock)
@@ -324,21 +355,23 @@ namespace Veldrid.Vk
             }
         }
 
-        private void ReturnSubmissionFence(Vulkan.VkFence fence)
+        private void ReturnSubmissionFence(Silk.NET.Vulkan.Fence fence)
         {
             _availableSubmissionFences.Enqueue(fence);
         }
 
-        private Vulkan.VkFence GetFreeSubmissionFence()
+        private Silk.NET.Vulkan.Fence GetFreeSubmissionFence()
         {
-            if (_availableSubmissionFences.TryDequeue(out Vulkan.VkFence availableFence))
+            if (_availableSubmissionFences.TryDequeue(out Silk.NET.Vulkan.Fence availableFence))
             {
                 return availableFence;
             }
             else
             {
-                VkFenceCreateInfo fenceCI = VkFenceCreateInfo.New();
-                VkResult result = vkCreateFence(_device, ref fenceCI, null, out Vulkan.VkFence newFence);
+                Silk.NET.Vulkan.FenceCreateInfo fenceCI = new Silk.NET.Vulkan.FenceCreateInfo();
+                fenceCI.SType = Silk.NET.Vulkan.StructureType.FenceCreateInfo;
+
+                var result = _vk.CreateFence(_device, &fenceCI, null, out Silk.NET.Vulkan.Fence newFence);
                 CheckResult(result);
                 return newFence;
             }
@@ -347,22 +380,29 @@ namespace Veldrid.Vk
         private protected override void SwapBuffersCore(Swapchain swapchain)
         {
             VkSwapchain vkSC = Util.AssertSubtype<Swapchain, VkSwapchain>(swapchain);
-            VkSwapchainKHR deviceSwapchain = vkSC.DeviceSwapchain;
-            VkPresentInfoKHR presentInfo = VkPresentInfoKHR.New();
-            presentInfo.swapchainCount = 1;
-            presentInfo.pSwapchains = &deviceSwapchain;
+            Silk.NET.Vulkan.SwapchainKHR deviceSwapchain = vkSC.DeviceSwapchain;
+            Silk.NET.Vulkan.PresentInfoKHR presentInfo = new Silk.NET.Vulkan.PresentInfoKHR();
+            presentInfo.SType = Silk.NET.Vulkan.StructureType.PresentInfoKhr;
+
+            presentInfo.SwapchainCount = 1;
+            presentInfo.PSwapchains = &deviceSwapchain;
             uint imageIndex = vkSC.ImageIndex;
-            presentInfo.pImageIndices = &imageIndex;
+            presentInfo.PImageIndices = &imageIndex;
 
             object presentLock = vkSC.PresentQueueIndex == _graphicsQueueIndex ? _graphicsQueueLock : vkSC;
             lock (presentLock)
             {
-                vkQueuePresentKHR(vkSC.PresentQueue, ref presentInfo);
-                if (vkSC.AcquireNextImage(_device, VkSemaphore.Null, vkSC.ImageAvailableFence))
+                var result = _vkSwapchain.QueuePresent(vkSC.PresentQueue, &presentInfo);
+                if (result == Silk.NET.Vulkan.Result.ErrorOutOfDateKhr || result == Silk.NET.Vulkan.Result.SuboptimalKhr)
                 {
-                    Vulkan.VkFence fence = vkSC.ImageAvailableFence;
-                    vkWaitForFences(_device, 1, ref fence, true, ulong.MaxValue);
-                    vkResetFences(_device, 1, ref fence);
+                    throw new VeldridException("Resize needed");
+                }
+
+                if (vkSC.AcquireNextImage(_device, default, vkSC.ImageAvailableFence))
+                {
+                    Silk.NET.Vulkan.Fence fence = vkSC.ImageAvailableFence;
+                    _vk.WaitForFences(_device, 1, &fence, true, ulong.MaxValue);
+                    _vk.ResetFences(_device, 1, &fence);
                 }
             }
         }
@@ -374,54 +414,54 @@ namespace Veldrid.Vk
                 switch (resource)
                 {
                     case VkBuffer buffer:
-                        SetDebugMarkerName(VkDebugReportObjectTypeEXT.BufferEXT, buffer.DeviceBuffer.Handle, name);
+                        SetDebugMarkerName(Silk.NET.Vulkan.DebugReportObjectTypeEXT.DebugReportObjectTypeBufferExt, buffer.DeviceBuffer.Handle, name);
                         break;
                     case VkCommandList commandList:
                         SetDebugMarkerName(
-                            VkDebugReportObjectTypeEXT.CommandBufferEXT,
+                            Silk.NET.Vulkan.DebugReportObjectTypeEXT.DebugReportObjectTypeCommandBufferExt,
                             (ulong)commandList.CommandBuffer.Handle,
                             string.Format("{0}_CommandBuffer", name));
                         SetDebugMarkerName(
-                            VkDebugReportObjectTypeEXT.CommandPoolEXT,
+                            Silk.NET.Vulkan.DebugReportObjectTypeEXT.DebugReportObjectTypeCommandPoolExt,
                             commandList.CommandPool.Handle,
                             string.Format("{0}_CommandPool", name));
                         break;
                     case VkFramebuffer framebuffer:
                         SetDebugMarkerName(
-                            VkDebugReportObjectTypeEXT.FramebufferEXT,
+                            Silk.NET.Vulkan.DebugReportObjectTypeEXT.DebugReportObjectTypeFramebufferExt,
                             framebuffer.CurrentFramebuffer.Handle,
                             name);
                         break;
                     case VkPipeline pipeline:
-                        SetDebugMarkerName(VkDebugReportObjectTypeEXT.PipelineEXT, pipeline.DevicePipeline.Handle, name);
-                        SetDebugMarkerName(VkDebugReportObjectTypeEXT.PipelineLayoutEXT, pipeline.PipelineLayout.Handle, name);
+                        SetDebugMarkerName(Silk.NET.Vulkan.DebugReportObjectTypeEXT.DebugReportObjectTypePipelineExt, pipeline.DevicePipeline.Handle, name);
+                        SetDebugMarkerName(Silk.NET.Vulkan.DebugReportObjectTypeEXT.DebugReportObjectTypePipelineLayoutExt, pipeline.PipelineLayout.Handle, name);
                         break;
                     case VkResourceLayout resourceLayout:
                         SetDebugMarkerName(
-                            VkDebugReportObjectTypeEXT.DescriptorSetLayoutEXT,
+                            Silk.NET.Vulkan.DebugReportObjectTypeEXT.DebugReportObjectTypeDescriptorSetLayoutExt,
                             resourceLayout.DescriptorSetLayout.Handle,
                             name);
                         break;
                     case VkResourceSet resourceSet:
-                        SetDebugMarkerName(VkDebugReportObjectTypeEXT.DescriptorSetEXT, resourceSet.DescriptorSet.Handle, name);
+                        SetDebugMarkerName(Silk.NET.Vulkan.DebugReportObjectTypeEXT.DebugReportObjectTypeDescriptorSetExt, resourceSet.DescriptorSet.Handle, name);
                         break;
                     case VkSampler sampler:
-                        SetDebugMarkerName(VkDebugReportObjectTypeEXT.SamplerEXT, sampler.DeviceSampler.Handle, name);
+                        SetDebugMarkerName(Silk.NET.Vulkan.DebugReportObjectTypeEXT.DebugReportObjectTypeSamplerExt, sampler.DeviceSampler.Handle, name);
                         break;
                     case VkShader shader:
-                        SetDebugMarkerName(VkDebugReportObjectTypeEXT.ShaderModuleEXT, shader.ShaderModule.Handle, name);
+                        SetDebugMarkerName(Silk.NET.Vulkan.DebugReportObjectTypeEXT.DebugReportObjectTypeShaderModuleExt, shader.ShaderModule.Handle, name);
                         break;
                     case VkTexture tex:
-                        SetDebugMarkerName(VkDebugReportObjectTypeEXT.ImageEXT, tex.OptimalDeviceImage.Handle, name);
+                        SetDebugMarkerName(Silk.NET.Vulkan.DebugReportObjectTypeEXT.DebugReportObjectTypeImageViewExt, tex.OptimalDeviceImage.Handle, name);
                         break;
                     case VkTextureView texView:
-                        SetDebugMarkerName(VkDebugReportObjectTypeEXT.ImageViewEXT, texView.ImageView.Handle, name);
+                        SetDebugMarkerName(Silk.NET.Vulkan.DebugReportObjectTypeEXT.DebugReportObjectTypeImageViewExt, texView.ImageView.Handle, name);
                         break;
                     case VkFence fence:
-                        SetDebugMarkerName(VkDebugReportObjectTypeEXT.FenceEXT, fence.DeviceFence.Handle, name);
+                        SetDebugMarkerName(Silk.NET.Vulkan.DebugReportObjectTypeEXT.DebugReportObjectTypeFenceExt, fence.DeviceFence.Handle, name);
                         break;
                     case VkSwapchain sc:
-                        SetDebugMarkerName(VkDebugReportObjectTypeEXT.SwapchainKHREXT, sc.DeviceSwapchain.Handle, name);
+                        SetDebugMarkerName(Silk.NET.Vulkan.DebugReportObjectTypeEXT.DebugReportObjectTypeSwapchainKhrExt, sc.DeviceSwapchain.Handle, name);
                         break;
                     default:
                         break;
@@ -429,13 +469,14 @@ namespace Veldrid.Vk
             }
         }
 
-        private void SetDebugMarkerName(VkDebugReportObjectTypeEXT type, ulong target, string name)
+        private void SetDebugMarkerName(Silk.NET.Vulkan.DebugReportObjectTypeEXT type, ulong target, string name)
         {
             Debug.Assert(_setObjectNameDelegate != null);
 
-            VkDebugMarkerObjectNameInfoEXT nameInfo = VkDebugMarkerObjectNameInfoEXT.New();
-            nameInfo.objectType = type;
-            nameInfo.@object = target;
+            Silk.NET.Vulkan.DebugMarkerObjectNameInfoEXT nameInfo = new Silk.NET.Vulkan.DebugMarkerObjectNameInfoEXT();
+            nameInfo.ObjectType = type;
+            nameInfo.Object = target;
+            nameInfo.SType = Silk.NET.Vulkan.StructureType.DebugMarkerObjectNameInfoExt;
 
             int byteCount = Encoding.UTF8.GetByteCount(name);
             byte* utf8Ptr = stackalloc byte[byteCount + 1];
@@ -445,8 +486,8 @@ namespace Veldrid.Vk
             }
             utf8Ptr[byteCount] = 0;
 
-            nameInfo.pObjectName = utf8Ptr;
-            VkResult result = _setObjectNameDelegate(_device, &nameInfo);
+            nameInfo.PObjectName = utf8Ptr;
+            var result = _setObjectNameDelegate(_device, &nameInfo);
             CheckResult(result);
         }
 
@@ -455,15 +496,18 @@ namespace Veldrid.Vk
             HashSet<string> availableInstanceLayers = new HashSet<string>(EnumerateInstanceLayers());
             HashSet<string> availableInstanceExtensions = new HashSet<string>(GetInstanceExtensions());
 
-            VkInstanceCreateInfo instanceCI = VkInstanceCreateInfo.New();
-            VkApplicationInfo applicationInfo = new VkApplicationInfo();
-            applicationInfo.apiVersion = new VkVersion(1, 0, 0);
-            applicationInfo.applicationVersion = new VkVersion(1, 0, 0);
-            applicationInfo.engineVersion = new VkVersion(1, 0, 0);
-            applicationInfo.pApplicationName = s_name;
-            applicationInfo.pEngineName = s_name;
+            Silk.NET.Vulkan.InstanceCreateInfo instanceCI = new Silk.NET.Vulkan.InstanceCreateInfo();
+            instanceCI.SType = Silk.NET.Vulkan.StructureType.InstanceCreateInfo;
 
-            instanceCI.pApplicationInfo = &applicationInfo;
+            Silk.NET.Vulkan.ApplicationInfo applicationInfo = new Silk.NET.Vulkan.ApplicationInfo();
+            applicationInfo.ApiVersion = new VkVersion(1, 1, 0);
+            applicationInfo.ApplicationVersion = new VkVersion(1, 0, 0);
+            applicationInfo.EngineVersion = new VkVersion(1, 0, 0);
+            applicationInfo.PApplicationName = s_name;
+            applicationInfo.PEngineName = s_name;
+            applicationInfo.SType = Silk.NET.Vulkan.StructureType.ApplicationInfo;
+
+            instanceCI.PApplicationInfo = &applicationInfo;
 
             StackList<IntPtr, Size64Bytes> instanceExtensions = new StackList<IntPtr, Size64Bytes>();
             StackList<IntPtr, Size64Bytes> instanceLayers = new StackList<IntPtr, Size64Bytes>();
@@ -563,16 +607,16 @@ namespace Veldrid.Vk
                 }
             }
 
-            instanceCI.enabledExtensionCount = instanceExtensions.Count;
-            instanceCI.ppEnabledExtensionNames = (byte**)instanceExtensions.Data;
+            instanceCI.EnabledExtensionCount = instanceExtensions.Count;
+            instanceCI.PpEnabledExtensionNames = (byte**)instanceExtensions.Data;
 
-            instanceCI.enabledLayerCount = instanceLayers.Count;
+            instanceCI.EnabledLayerCount = instanceLayers.Count;
             if (instanceLayers.Count > 0)
             {
-                instanceCI.ppEnabledLayerNames = (byte**)instanceLayers.Data;
+                instanceCI.PpEnabledLayerNames = (byte**)instanceLayers.Data;
             }
 
-            VkResult result = vkCreateInstance(ref instanceCI, null, out _instance);
+            var result = _vk.CreateInstance(&instanceCI, null, out _instance);
             CheckResult(result);
 
             if (HasSurfaceExtension(CommonStrings.VK_EXT_METAL_SURFACE_EXTENSION_NAME))
@@ -589,6 +633,7 @@ namespace Veldrid.Vk
             {
                 _getPhysicalDeviceProperties2 = GetInstanceProcAddr<vkGetPhysicalDeviceProperties2_t>("vkGetPhysicalDeviceProperties2")
                     ?? GetInstanceProcAddr<vkGetPhysicalDeviceProperties2_t>("vkGetPhysicalDeviceProperties2KHR");
+
             }
 
             foreach (FixedUtf8String tempStr in tempStrings)
@@ -602,32 +647,32 @@ namespace Veldrid.Vk
             return _surfaceExtensions.Contains(extension);
         }
 
-        public void EnableDebugCallback(VkDebugReportFlagsEXT flags = VkDebugReportFlagsEXT.WarningEXT | VkDebugReportFlagsEXT.ErrorEXT)
+        public void EnableDebugCallback(Silk.NET.Vulkan.DebugReportFlagsEXT flags = Silk.NET.Vulkan.DebugReportFlagsEXT.DebugReportWarningBitExt | Silk.NET.Vulkan.DebugReportFlagsEXT.DebugReportErrorBitExt)
         {
             Debug.WriteLine("Enabling Vulkan Debug callbacks.");
-            _debugCallbackFunc = DebugCallback;
-            IntPtr debugFunctionPtr = Marshal.GetFunctionPointerForDelegate(_debugCallbackFunc);
-            VkDebugReportCallbackCreateInfoEXT debugCallbackCI = VkDebugReportCallbackCreateInfoEXT.New();
-            debugCallbackCI.flags = flags;
-            debugCallbackCI.pfnCallback = debugFunctionPtr;
+            _debugCallbackFunc = new Silk.NET.Vulkan.PfnDebugReportCallbackEXT(DebugCallback);
+        //    IntPtr debugFunctionPtr = Marshal.GetFunctionPointerForDelegate(_debugCallbackFunc);
+            Silk.NET.Vulkan.DebugReportCallbackCreateInfoEXT debugCallbackCI = new Silk.NET.Vulkan.DebugReportCallbackCreateInfoEXT();
+            debugCallbackCI.Flags = flags;
+            debugCallbackCI.PfnCallback = new Silk.NET.Vulkan.PfnDebugReportCallbackEXT(_debugCallbackFunc);
+            debugCallbackCI.SType = Silk.NET.Vulkan.StructureType.DebugReportCallbackCreateInfoExt;
             IntPtr createFnPtr;
-            using (FixedUtf8String debugExtFnName = "vkCreateDebugReportCallbackEXT")
-            {
-                createFnPtr = vkGetInstanceProcAddr(_instance, debugExtFnName);
-            }
+        
+            createFnPtr = _vk.GetInstanceProcAddr(_instance, "vkCreateDebugReportCallbackEXT");
+            
             if (createFnPtr == IntPtr.Zero)
             {
                 return;
             }
 
             vkCreateDebugReportCallbackEXT_d createDelegate = Marshal.GetDelegateForFunctionPointer<vkCreateDebugReportCallbackEXT_d>(createFnPtr);
-            VkResult result = createDelegate(_instance, &debugCallbackCI, IntPtr.Zero, out _debugCallbackHandle);
+            var result = createDelegate(_instance, &debugCallbackCI, IntPtr.Zero, out _debugCallbackHandle);
             CheckResult(result);
         }
 
         private uint DebugCallback(
             uint flags,
-            VkDebugReportObjectTypeEXT objectType,
+            Silk.NET.Vulkan.DebugReportObjectTypeEXT objectType,
             ulong @object,
             UIntPtr location,
             int messageCode,
@@ -636,7 +681,12 @@ namespace Veldrid.Vk
             void* pUserData)
         {
             string message = Util.GetString(pMessage);
-            VkDebugReportFlagsEXT debugReportFlags = (VkDebugReportFlagsEXT)flags;
+            Silk.NET.Vulkan.DebugReportFlagsEXT debugReportFlags = (Silk.NET.Vulkan.DebugReportFlagsEXT)flags;
+
+            string fullMessage = $"[{debugReportFlags}] ({objectType}) {message}";
+
+            Console.WriteLine(fullMessage);
+
 
 #if DEBUG
             if (Debugger.IsAttached)
@@ -644,84 +694,82 @@ namespace Veldrid.Vk
                 Debugger.Break();
             }
 #endif
-
-            string fullMessage = $"[{debugReportFlags}] ({objectType}) {message}";
-
-            if (debugReportFlags == VkDebugReportFlagsEXT.ErrorEXT)
+            if (debugReportFlags == Silk.NET.Vulkan.DebugReportFlagsEXT.DebugReportErrorBitExt)
             {
-                throw new VeldridException("A Vulkan validation error was encountered: " + fullMessage);
+             //   throw new VeldridException("A Vulkan validation error was encountered: " + fullMessage);
             }
 
-            Console.WriteLine(fullMessage);
             return 0;
         }
 
         private void CreatePhysicalDevice()
         {
             uint deviceCount = 0;
-            vkEnumeratePhysicalDevices(_instance, ref deviceCount, null);
+            _vk.EnumeratePhysicalDevices(_instance, ref deviceCount, null);
             if (deviceCount == 0)
             {
                 throw new InvalidOperationException("No physical devices exist.");
             }
 
-            VkPhysicalDevice[] physicalDevices = new VkPhysicalDevice[deviceCount];
-            vkEnumeratePhysicalDevices(_instance, ref deviceCount, ref physicalDevices[0]);
+            Silk.NET.Vulkan.PhysicalDevice[] physicalDevices = new Silk.NET.Vulkan.PhysicalDevice[deviceCount];
+            _vk.EnumeratePhysicalDevices(_instance, ref deviceCount, ref physicalDevices[0]);
             // Just use the first one.
             _physicalDevice = physicalDevices[0];
 
-            vkGetPhysicalDeviceProperties(_physicalDevice, out _physicalDeviceProperties);
-            fixed (byte* utf8NamePtr = _physicalDeviceProperties.deviceName)
+            _vk.GetPhysicalDeviceProperties(_physicalDevice, out _physicalDeviceProperties);
+            fixed (byte* utf8NamePtr = _physicalDeviceProperties.DeviceName)
             {
                 _deviceName = Encoding.UTF8.GetString(utf8NamePtr, (int)MaxPhysicalDeviceNameSize).TrimEnd('\0');
             }
 
-            _vendorName = "id:" + _physicalDeviceProperties.vendorID.ToString("x8");
+            _vendorName = "id:" + _physicalDeviceProperties.VendorID.ToString("x8");
             _apiVersion = GraphicsApiVersion.Unknown;
-            _driverInfo = "version:" + _physicalDeviceProperties.driverVersion.ToString("x8");
+            _driverInfo = "version:" + _physicalDeviceProperties.DriverVersion.ToString("x8");
 
-            vkGetPhysicalDeviceFeatures(_physicalDevice, out _physicalDeviceFeatures);
+            _vk.GetPhysicalDeviceFeatures(_physicalDevice, out _physicalDeviceFeatures);
 
-            vkGetPhysicalDeviceMemoryProperties(_physicalDevice, out _physicalDeviceMemProperties);
+            _vk.GetPhysicalDeviceMemoryProperties(_physicalDevice, out _physicalDeviceMemProperties);
         }
 
-        public VkExtensionProperties[] GetDeviceExtensionProperties()
+        public Silk.NET.Vulkan.ExtensionProperties[] GetDeviceExtensionProperties()
         {
             uint propertyCount = 0;
-            VkResult result = vkEnumerateDeviceExtensionProperties(_physicalDevice, (byte*)null, &propertyCount, null);
+            var result = _vk.EnumerateDeviceExtensionProperties(_physicalDevice, (byte*)null, &propertyCount, null);
             CheckResult(result);
-            VkExtensionProperties[] props = new VkExtensionProperties[(int)propertyCount];
-            fixed (VkExtensionProperties* properties = props)
+            Silk.NET.Vulkan.ExtensionProperties[] props = new Silk.NET.Vulkan.ExtensionProperties[(int)propertyCount];
+            fixed (Silk.NET.Vulkan.ExtensionProperties* properties = props)
             {
-                result = vkEnumerateDeviceExtensionProperties(_physicalDevice, (byte*)null, &propertyCount, properties);
+                result = _vk.EnumerateDeviceExtensionProperties(_physicalDevice, (byte*)null, &propertyCount, properties);
                 CheckResult(result);
             }
             return props;
         }
 
-        private void CreateLogicalDevice(VkSurfaceKHR surface, bool preferStandardClipY, VulkanDeviceOptions options)
+        private void CreateLogicalDevice(Silk.NET.Vulkan.SurfaceKHR surface, bool preferStandardClipY, VulkanDeviceOptions options)
         {
             GetQueueFamilyIndices(surface);
 
             HashSet<uint> familyIndices = new HashSet<uint> { _graphicsQueueIndex, _presentQueueIndex };
-            VkDeviceQueueCreateInfo* queueCreateInfos = stackalloc VkDeviceQueueCreateInfo[familyIndices.Count];
+            Silk.NET.Vulkan.DeviceQueueCreateInfo* queueCreateInfos = stackalloc Silk.NET.Vulkan.DeviceQueueCreateInfo[familyIndices.Count];
             uint queueCreateInfosCount = (uint)familyIndices.Count;
 
             int i = 0;
             foreach (uint index in familyIndices)
             {
-                VkDeviceQueueCreateInfo queueCreateInfo = VkDeviceQueueCreateInfo.New();
-                queueCreateInfo.queueFamilyIndex = _graphicsQueueIndex;
-                queueCreateInfo.queueCount = 1;
+                Silk.NET.Vulkan.DeviceQueueCreateInfo queueCreateInfo = new Silk.NET.Vulkan.DeviceQueueCreateInfo();
+                queueCreateInfo.SType = Silk.NET.Vulkan.StructureType.DeviceQueueCreateInfo;
+
+                queueCreateInfo.QueueFamilyIndex = _graphicsQueueIndex;
+                queueCreateInfo.QueueCount = 1;
                 float priority = 1f;
-                queueCreateInfo.pQueuePriorities = &priority;
+                queueCreateInfo.PQueuePriorities = &priority;
                 queueCreateInfos[i] = queueCreateInfo;
                 i += 1;
             }
 
-            VkPhysicalDeviceFeatures deviceFeatures = _physicalDeviceFeatures;
+            Silk.NET.Vulkan.PhysicalDeviceFeatures deviceFeatures = _physicalDeviceFeatures;
 
-            VkExtensionProperties[] props = GetDeviceExtensionProperties();
+            Silk.NET.Vulkan.ExtensionProperties[] props = GetDeviceExtensionProperties();
 
             HashSet<string> requiredInstanceExtensions = new HashSet<string>(options.DeviceExtensions ?? Array.Empty<string>());
 
@@ -731,11 +779,11 @@ namespace Veldrid.Vk
             IntPtr[] activeExtensions = new IntPtr[props.Length];
             uint activeExtensionCount = 0;
 
-            fixed (VkExtensionProperties* properties = props)
+            fixed (Silk.NET.Vulkan.ExtensionProperties* properties = props)
             {
                 for (int property = 0; property < props.Length; property++)
                 {
-                    string extensionName = Util.GetString(properties[property].extensionName);
+                    string extensionName = Util.GetString(properties[property].ExtensionName);
                     if (extensionName == "VK_EXT_debug_marker")
                     {
                         activeExtensions[activeExtensionCount++] = CommonStrings.VK_EXT_DEBUG_MARKER_EXTENSION_NAME;
@@ -744,36 +792,36 @@ namespace Veldrid.Vk
                     }
                     else if (extensionName == "VK_KHR_swapchain")
                     {
-                        activeExtensions[activeExtensionCount++] = (IntPtr)properties[property].extensionName;
+                        activeExtensions[activeExtensionCount++] = (IntPtr)properties[property].ExtensionName;
                         requiredInstanceExtensions.Remove(extensionName);
                     }
                     else if (preferStandardClipY && extensionName == "VK_KHR_maintenance1")
                     {
-                        activeExtensions[activeExtensionCount++] = (IntPtr)properties[property].extensionName;
+                        activeExtensions[activeExtensionCount++] = (IntPtr)properties[property].ExtensionName;
                         requiredInstanceExtensions.Remove(extensionName);
                         _standardClipYDirection = true;
                     }
                     else if (extensionName == "VK_KHR_get_memory_requirements2")
                     {
-                        activeExtensions[activeExtensionCount++] = (IntPtr)properties[property].extensionName;
+                        activeExtensions[activeExtensionCount++] = (IntPtr)properties[property].ExtensionName;
                         requiredInstanceExtensions.Remove(extensionName);
                         hasMemReqs2 = true;
                     }
                     else if (extensionName == "VK_KHR_dedicated_allocation")
                     {
-                        activeExtensions[activeExtensionCount++] = (IntPtr)properties[property].extensionName;
+                        activeExtensions[activeExtensionCount++] = (IntPtr)properties[property].ExtensionName;
                         requiredInstanceExtensions.Remove(extensionName);
                         hasDedicatedAllocation = true;
                     }
                     else if (extensionName == "VK_KHR_driver_properties")
                     {
-                        activeExtensions[activeExtensionCount++] = (IntPtr)properties[property].extensionName;
+                        activeExtensions[activeExtensionCount++] = (IntPtr)properties[property].ExtensionName;
                         requiredInstanceExtensions.Remove(extensionName);
                         hasDriverProperties = true;
                     }
                     else if (requiredInstanceExtensions.Remove(extensionName))
                     {
-                        activeExtensions[activeExtensionCount++] = (IntPtr)properties[property].extensionName;
+                        activeExtensions[activeExtensionCount++] = (IntPtr)properties[property].ExtensionName;
                     }
                 }
             }
@@ -785,11 +833,13 @@ namespace Veldrid.Vk
                     $"The following Vulkan device extensions were not available: {missingList}");
             }
 
-            VkDeviceCreateInfo deviceCreateInfo = VkDeviceCreateInfo.New();
-            deviceCreateInfo.queueCreateInfoCount = queueCreateInfosCount;
-            deviceCreateInfo.pQueueCreateInfos = queueCreateInfos;
+            Silk.NET.Vulkan.DeviceCreateInfo deviceCreateInfo = new Silk.NET.Vulkan.DeviceCreateInfo();
+            deviceCreateInfo.SType = Silk.NET.Vulkan.StructureType.DeviceCreateInfo;
 
-            deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+            deviceCreateInfo.QueueCreateInfoCount = queueCreateInfosCount;
+            deviceCreateInfo.PQueueCreateInfos = queueCreateInfos;
+
+            deviceCreateInfo.PEnabledFeatures = &deviceFeatures;
 
             StackList<IntPtr> layerNames = new StackList<IntPtr>();
             if (_standardValidationSupported)
@@ -800,19 +850,19 @@ namespace Veldrid.Vk
             {
                 layerNames.Add(CommonStrings.KhronosValidationLayerName);
             }
-            deviceCreateInfo.enabledLayerCount = layerNames.Count;
-            deviceCreateInfo.ppEnabledLayerNames = (byte**)layerNames.Data;
+            deviceCreateInfo.EnabledLayerCount = layerNames.Count;
+            deviceCreateInfo.PpEnabledLayerNames = (byte**)layerNames.Data;
 
             fixed (IntPtr* activeExtensionsPtr = activeExtensions)
             {
-                deviceCreateInfo.enabledExtensionCount = activeExtensionCount;
-                deviceCreateInfo.ppEnabledExtensionNames = (byte**)activeExtensionsPtr;
+                deviceCreateInfo.EnabledExtensionCount = activeExtensionCount;
+                deviceCreateInfo.PpEnabledExtensionNames = (byte**)activeExtensionsPtr;
 
-                VkResult result = vkCreateDevice(_physicalDevice, ref deviceCreateInfo, null, out _device);
+                var result = _vk.CreateDevice(_physicalDevice, &deviceCreateInfo, null, out _device);
                 CheckResult(result);
             }
 
-            vkGetDeviceQueue(_device, _graphicsQueueIndex, 0, out _graphicsQueue);
+            _vk.GetDeviceQueue(_device, _graphicsQueueIndex, 0, out _graphicsQueue);
 
             if (_debugMarkerEnabled)
             {
@@ -832,22 +882,26 @@ namespace Veldrid.Vk
                 _getImageMemoryRequirements2 = GetDeviceProcAddr<vkGetImageMemoryRequirements2_t>("vkGetImageMemoryRequirements2")
                     ?? GetDeviceProcAddr<vkGetImageMemoryRequirements2_t>("vkGetImageMemoryRequirements2KHR");
             }
+
             if (_getPhysicalDeviceProperties2 != null && hasDriverProperties)
             {
-                VkPhysicalDeviceProperties2KHR deviceProps = VkPhysicalDeviceProperties2KHR.New();
-                VkPhysicalDeviceDriverProperties driverProps = VkPhysicalDeviceDriverProperties.New();
+                Silk.NET.Vulkan.PhysicalDeviceProperties2KHR deviceProps = new Silk.NET.Vulkan.PhysicalDeviceProperties2KHR();
+                deviceProps.SType = Silk.NET.Vulkan.StructureType.PhysicalDeviceProperties2Khr;
 
-                deviceProps.pNext = &driverProps;
+                Silk.NET.Vulkan.PhysicalDeviceDriverProperties driverProps = new Silk.NET.Vulkan.PhysicalDeviceDriverProperties();
+                driverProps.SType = Silk.NET.Vulkan.StructureType.PhysicalDeviceDriverProperties;
+
+                deviceProps.PNext = &driverProps;
                 _getPhysicalDeviceProperties2(_physicalDevice, &deviceProps);
 
                 string driverName = Encoding.UTF8.GetString(
-                    driverProps.driverName, VkPhysicalDeviceDriverProperties.DriverNameLength).TrimEnd('\0');
+                    driverProps.DriverName, VkPhysicalDeviceDriverProperties.DriverNameLength).TrimEnd('\0');
 
                 string driverInfo = Encoding.UTF8.GetString(
-                    driverProps.driverInfo, VkPhysicalDeviceDriverProperties.DriverInfoLength).TrimEnd('\0');
+                    driverProps.DriverInfo, VkPhysicalDeviceDriverProperties.DriverInfoLength).TrimEnd('\0');
 
-                VkConformanceVersion conforming = driverProps.conformanceVersion;
-                _apiVersion = new GraphicsApiVersion(conforming.major, conforming.minor, conforming.subminor, conforming.patch);
+                var conforming = driverProps.ConformanceVersion;
+                _apiVersion = new GraphicsApiVersion(conforming.Major, conforming.Minor, conforming.Subminor, conforming.Patch);
                 _driverName = driverName;
                 _driverInfo = driverInfo;
             }
@@ -864,7 +918,7 @@ namespace Veldrid.Vk
             }
             utf8Ptr[byteCount] = 0;
 
-            return vkGetInstanceProcAddr(_instance, utf8Ptr);
+            return _vk.GetInstanceProcAddr(_instance, utf8Ptr);
         }
 
         private T GetInstanceProcAddr<T>(string name)
@@ -888,7 +942,7 @@ namespace Veldrid.Vk
             }
             utf8Ptr[byteCount] = 0;
 
-            return vkGetDeviceProcAddr(_device, utf8Ptr);
+            return _vk.GetDeviceProcAddr(_device, utf8Ptr);
         }
 
         private T GetDeviceProcAddr<T>(string name)
@@ -901,19 +955,19 @@ namespace Veldrid.Vk
             return default;
         }
 
-        private void GetQueueFamilyIndices(VkSurfaceKHR surface)
+        private void GetQueueFamilyIndices(Silk.NET.Vulkan.SurfaceKHR surface)
         {
             uint queueFamilyCount = 0;
-            vkGetPhysicalDeviceQueueFamilyProperties(_physicalDevice, ref queueFamilyCount, null);
-            VkQueueFamilyProperties[] qfp = new VkQueueFamilyProperties[queueFamilyCount];
-            vkGetPhysicalDeviceQueueFamilyProperties(_physicalDevice, ref queueFamilyCount, out qfp[0]);
+            _vk.GetPhysicalDeviceQueueFamilyProperties(_physicalDevice, ref queueFamilyCount, null);
+            Silk.NET.Vulkan.QueueFamilyProperties[] qfp = new Silk.NET.Vulkan.QueueFamilyProperties[queueFamilyCount];
+            _vk.GetPhysicalDeviceQueueFamilyProperties(_physicalDevice, ref queueFamilyCount, out qfp[0]);
 
             bool foundGraphics = false;
-            bool foundPresent = surface == VkSurfaceKHR.Null;
+            bool foundPresent = surface.Handle == default;
 
             for (uint i = 0; i < qfp.Length; i++)
             {
-                if ((qfp[i].queueFlags & VkQueueFlags.Graphics) != 0)
+                if ((qfp[i].QueueFlags & Silk.NET.Vulkan.QueueFlags.QueueGraphicsBit) != 0)
                 {
                     _graphicsQueueIndex = i;
                     foundGraphics = true;
@@ -921,7 +975,7 @@ namespace Veldrid.Vk
 
                 if (!foundPresent)
                 {
-                    vkGetPhysicalDeviceSurfaceSupportKHR(_physicalDevice, i, surface, out VkBool32 presentSupported);
+                    vkSurface.GetPhysicalDeviceSurfaceSupport(_physicalDevice, i, surface, out Silk.NET.Core.Bool32 presentSupported);
                     if (presentSupported)
                     {
                         _presentQueueIndex = i;
@@ -943,10 +997,12 @@ namespace Veldrid.Vk
 
         private void CreateGraphicsCommandPool()
         {
-            VkCommandPoolCreateInfo commandPoolCI = VkCommandPoolCreateInfo.New();
-            commandPoolCI.flags = VkCommandPoolCreateFlags.ResetCommandBuffer;
-            commandPoolCI.queueFamilyIndex = _graphicsQueueIndex;
-            VkResult result = vkCreateCommandPool(_device, ref commandPoolCI, null, out _graphicsCommandPool);
+            Silk.NET.Vulkan.CommandPoolCreateInfo commandPoolCI = new Silk.NET.Vulkan.CommandPoolCreateInfo();
+            commandPoolCI.SType = Silk.NET.Vulkan.StructureType.CommandPoolCreateInfo;
+
+            commandPoolCI.Flags = Silk.NET.Vulkan.CommandPoolCreateFlags.CommandPoolCreateResetCommandBufferBit;
+            commandPoolCI.QueueFamilyIndex = _graphicsQueueIndex;
+            var result = _vk.CreateCommandPool(_device, &commandPoolCI, null, out _graphicsCommandPool);
             CheckResult(result);
         }
 
@@ -966,12 +1022,12 @@ namespace Veldrid.Vk
             else
             {
                 VkTexture texture = Util.AssertSubtype<MappableResource, VkTexture>(resource);
-                VkSubresourceLayout layout = texture.GetSubresourceLayout(subresource);
+                Silk.NET.Vulkan.SubresourceLayout layout = texture.GetSubresourceLayout(subresource);
                 memoryBlock = texture.Memory;
-                sizeInBytes = (uint)layout.size;
-                offset = (uint)layout.offset;
-                rowPitch = (uint)layout.rowPitch;
-                depthPitch = (uint)layout.depthPitch;
+                sizeInBytes = (uint)layout.Size;
+                offset = (uint)layout.Offset;
+                rowPitch = (uint)layout.RowPitch;
+                depthPitch = (uint)layout.DepthPitch;
             }
 
             if (memoryBlock.DeviceMemory.Handle != 0)
@@ -1012,31 +1068,30 @@ namespace Veldrid.Vk
 
             if (memoryBlock.DeviceMemory.Handle != 0 && !memoryBlock.IsPersistentMapped)
             {
-                vkUnmapMemory(_device, memoryBlock.DeviceMemory);
+                _vk.UnmapMemory(_device, memoryBlock.DeviceMemory);
             }
         }
 
         protected override void PlatformDispose()
         {
             Debug.Assert(_submittedFences.Count == 0);
-            foreach (Vulkan.VkFence fence in _availableSubmissionFences)
+            foreach (Silk.NET.Vulkan.Fence fence in _availableSubmissionFences)
             {
-                vkDestroyFence(_device, fence, null);
+                _vk.DestroyFence(_device, fence, null);
             }
 
             _mainSwapchain?.Dispose();
-            if (_debugCallbackFunc != null)
+            if (_debugCallbackFunc.Handle != default)
             {
-                _debugCallbackFunc = null;
-                FixedUtf8String debugExtFnName = "vkDestroyDebugReportCallbackEXT";
-                IntPtr destroyFuncPtr = vkGetInstanceProcAddr(_instance, debugExtFnName);
+                _debugCallbackFunc = default;
+                IntPtr destroyFuncPtr = _vk.GetInstanceProcAddr(_instance, "vkDestroyDebugReportCallbackEXT");
                 vkDestroyDebugReportCallbackEXT_d destroyDel
                     = Marshal.GetDelegateForFunctionPointer<vkDestroyDebugReportCallbackEXT_d>(destroyFuncPtr);
                 destroyDel(_instance, _debugCallbackHandle, null);
             }
 
             _descriptorPoolManager.DestroyAll();
-            vkDestroyCommandPool(_device, _graphicsCommandPool, null);
+            _vk.DestroyCommandPool(_device, _graphicsCommandPool, null);
 
             Debug.Assert(_submittedStagingTextures.Count == 0);
             foreach (VkTexture tex in _availableStagingTextures)
@@ -1061,17 +1116,17 @@ namespace Veldrid.Vk
 
             _memoryManager.Dispose();
 
-            VkResult result = vkDeviceWaitIdle(_device);
+            var result = _vk.DeviceWaitIdle(_device);
             CheckResult(result);
-            vkDestroyDevice(_device, null);
-            vkDestroyInstance(_instance, null);
+            _vk.DestroyDevice(_device, null);
+            _vk.DestroyInstance(_instance, null);
         }
 
         private protected override void WaitForIdleCore()
         {
             lock (_graphicsQueueLock)
             {
-                vkQueueWaitIdle(_graphicsQueue);
+                _vk.QueueWaitIdle(_graphicsQueue);
             }
 
             CheckSubmittedFences();
@@ -1079,36 +1134,36 @@ namespace Veldrid.Vk
 
         public override TextureSampleCount GetSampleCountLimit(PixelFormat format, bool depthFormat)
         {
-            VkImageUsageFlags usageFlags = VkImageUsageFlags.Sampled;
-            usageFlags |= depthFormat ? VkImageUsageFlags.DepthStencilAttachment : VkImageUsageFlags.ColorAttachment;
+            Silk.NET.Vulkan.ImageUsageFlags usageFlags = Silk.NET.Vulkan.ImageUsageFlags.ImageUsageSampledBit;
+            usageFlags |= depthFormat ? Silk.NET.Vulkan.ImageUsageFlags.ImageUsageDepthStencilAttachmentBit : Silk.NET.Vulkan.ImageUsageFlags.ImageUsageColorAttachmentBit;
 
-            vkGetPhysicalDeviceImageFormatProperties(
+           _vk.GetPhysicalDeviceImageFormatProperties(
                 _physicalDevice,
                 VkFormats.VdToVkPixelFormat(format),
-                VkImageType.Image2D,
-                VkImageTiling.Optimal,
+                 Silk.NET.Vulkan.ImageType.ImageType2D,
+                 Silk.NET.Vulkan.ImageTiling.Optimal,
                 usageFlags,
-                VkImageCreateFlags.None,
-                out VkImageFormatProperties formatProperties);
+                 0,
+                out Silk.NET.Vulkan.ImageFormatProperties formatProperties);
 
-            VkSampleCountFlags vkSampleCounts = formatProperties.sampleCounts;
-            if ((vkSampleCounts & VkSampleCountFlags.Count32) == VkSampleCountFlags.Count32)
+            Silk.NET.Vulkan.SampleCountFlags vkSampleCounts = formatProperties.SampleCounts;
+            if ((vkSampleCounts & Silk.NET.Vulkan.SampleCountFlags.SampleCount32Bit) == Silk.NET.Vulkan.SampleCountFlags.SampleCount32Bit)
             {
                 return TextureSampleCount.Count32;
             }
-            else if ((vkSampleCounts & VkSampleCountFlags.Count16) == VkSampleCountFlags.Count16)
+            else if ((vkSampleCounts & Silk.NET.Vulkan.SampleCountFlags.SampleCount16Bit) == Silk.NET.Vulkan.SampleCountFlags.SampleCount16Bit)
             {
                 return TextureSampleCount.Count16;
             }
-            else if ((vkSampleCounts & VkSampleCountFlags.Count8) == VkSampleCountFlags.Count8)
+            else if ((vkSampleCounts & Silk.NET.Vulkan.SampleCountFlags.SampleCount8Bit) == Silk.NET.Vulkan.SampleCountFlags.SampleCount8Bit)
             {
                 return TextureSampleCount.Count8;
             }
-            else if ((vkSampleCounts & VkSampleCountFlags.Count4) == VkSampleCountFlags.Count4)
+            else if ((vkSampleCounts & Silk.NET.Vulkan.SampleCountFlags.SampleCount4Bit) == Silk.NET.Vulkan.SampleCountFlags.SampleCount4Bit)
             {
                 return TextureSampleCount.Count4;
             }
-            else if ((vkSampleCounts & VkSampleCountFlags.Count2) == VkSampleCountFlags.Count2)
+            else if ((vkSampleCounts & Silk.NET.Vulkan.SampleCountFlags.SampleCount2Bit) == Silk.NET.Vulkan.SampleCountFlags.SampleCount2Bit)
             {
                 return TextureSampleCount.Count2;
             }
@@ -1122,21 +1177,21 @@ namespace Veldrid.Vk
             TextureUsage usage,
             out PixelFormatProperties properties)
         {
-            VkFormat vkFormat = VkFormats.VdToVkPixelFormat(format, (usage & TextureUsage.DepthStencil) != 0);
-            VkImageType vkType = VkFormats.VdToVkTextureType(type);
-            VkImageTiling tiling = usage == TextureUsage.Staging ? VkImageTiling.Linear : VkImageTiling.Optimal;
-            VkImageUsageFlags vkUsage = VkFormats.VdToVkTextureUsage(usage);
+            Silk.NET.Vulkan.Format vkFormat = VkFormats.VdToVkPixelFormat(format, (usage & TextureUsage.DepthStencil) != 0);
+            Silk.NET.Vulkan.ImageType vkType = VkFormats.VdToVkTextureType(type);
+            Silk.NET.Vulkan.ImageTiling tiling = usage == TextureUsage.Staging ? Silk.NET.Vulkan.ImageTiling.Linear : Silk.NET.Vulkan.ImageTiling.Optimal;
+            Silk.NET.Vulkan.ImageUsageFlags vkUsage = VkFormats.VdToVkTextureUsage(usage);
 
-            VkResult result = vkGetPhysicalDeviceImageFormatProperties(
+            var result =_vk.GetPhysicalDeviceImageFormatProperties(
                 _physicalDevice,
                 vkFormat,
                 vkType,
                 tiling,
                 vkUsage,
-                VkImageCreateFlags.None,
-                out VkImageFormatProperties vkProps);
+                0,
+                out Silk.NET.Vulkan.ImageFormatProperties vkProps);
 
-            if (result == VkResult.ErrorFormatNotSupported)
+            if (result == Silk.NET.Vulkan.Result.ErrorFormatNotSupported)
             {
                 properties = default(PixelFormatProperties);
                 return false;
@@ -1144,23 +1199,23 @@ namespace Veldrid.Vk
             CheckResult(result);
 
             properties = new PixelFormatProperties(
-               vkProps.maxExtent.width,
-               vkProps.maxExtent.height,
-               vkProps.maxExtent.depth,
-               vkProps.maxMipLevels,
-               vkProps.maxArrayLayers,
-               (uint)vkProps.sampleCounts);
+               vkProps.MaxExtent.Width,
+               vkProps.MaxExtent.Height,
+               vkProps.MaxExtent.Depth,
+               vkProps.MaxMipLevels,
+               vkProps.MaxArrayLayers,
+               (uint)vkProps.SampleCounts);
             return true;
         }
 
-        internal VkFilter GetFormatFilter(VkFormat format)
+        internal Silk.NET.Vulkan.Filter GetFormatFilter(Silk.NET.Vulkan.Format format)
         {
-            if (!_filters.TryGetValue(format, out VkFilter filter))
+            if (!_filters.TryGetValue(format, out Silk.NET.Vulkan.Filter filter))
             {
-                vkGetPhysicalDeviceFormatProperties(_physicalDevice, format, out VkFormatProperties vkFormatProps);
-                filter = (vkFormatProps.optimalTilingFeatures & VkFormatFeatureFlags.SampledImageFilterLinear) != 0
-                    ? VkFilter.Linear
-                    : VkFilter.Nearest;
+                _vk.GetPhysicalDeviceFormatProperties(_physicalDevice, format, out Silk.NET.Vulkan.FormatProperties vkFormatProps);
+                filter = (vkFormatProps.OptimalTilingFeatures & Silk.NET.Vulkan.FormatFeatureFlags.FormatFeatureSampledImageFilterLinearBit) != 0
+                    ? Silk.NET.Vulkan.Filter.Linear
+                    : Silk.NET.Vulkan.Filter.Nearest;
                 _filters.TryAdd(format, filter);
             }
 
@@ -1191,14 +1246,14 @@ namespace Veldrid.Vk
             if (!isPersistentMapped)
             {
                 SharedCommandPool pool = GetFreeCommandPool();
-                VkCommandBuffer cb = pool.BeginNewCommandBuffer();
+                Silk.NET.Vulkan.CommandBuffer cb = pool.BeginNewCommandBuffer();
 
-                VkBufferCopy copyRegion = new VkBufferCopy
+                Silk.NET.Vulkan.BufferCopy copyRegion = new Silk.NET.Vulkan.BufferCopy
                 {
-                    dstOffset = bufferOffsetInBytes,
-                    size = sizeInBytes
+                    DstOffset = bufferOffsetInBytes,
+                    Size = sizeInBytes
                 };
-                vkCmdCopyBuffer(cb, copySrcVkBuffer.DeviceBuffer, vkBuffer.DeviceBuffer, 1, ref copyRegion);
+                _vk.CmdCopyBuffer(cb, copySrcVkBuffer.DeviceBuffer, vkBuffer.DeviceBuffer, 1, &copyRegion);
 
                 pool.EndAndSubmit(cb);
                 lock (_stagingResourcesLock)
@@ -1232,7 +1287,7 @@ namespace Veldrid.Vk
             else
             {
                 void* mappedPtr;
-                VkResult result = vkMapMemory(Device, buffer.Memory.DeviceMemory, buffer.Memory.Offset, numBytes, 0, &mappedPtr);
+                Silk.NET.Vulkan.Result result = _vk.MapMemory(Device, buffer.Memory.DeviceMemory, buffer.Memory.Offset, numBytes, 0, &mappedPtr);
                 CheckResult(result);
                 return (IntPtr)mappedPtr;
             }
@@ -1242,7 +1297,7 @@ namespace Veldrid.Vk
         {
             if (!buffer.Memory.IsPersistentMapped)
             {
-                vkUnmapMemory(Device, buffer.Memory.DeviceMemory);
+                _vk.UnmapMemory(Device, buffer.Memory.DeviceMemory);
             }
         }
 
@@ -1265,8 +1320,8 @@ namespace Veldrid.Vk
             {
                 VkMemoryBlock memBlock = vkTex.Memory;
                 uint subresource = texture.CalculateSubresource(mipLevel, arrayLayer);
-                VkSubresourceLayout layout = vkTex.GetSubresourceLayout(subresource);
-                byte* imageBasePtr = (byte*)memBlock.BlockMappedPointer + layout.offset;
+                Silk.NET.Vulkan.SubresourceLayout layout = vkTex.GetSubresourceLayout(subresource);
+                byte* imageBasePtr = (byte*)memBlock.BlockMappedPointer + layout.Offset;
 
                 uint srcRowPitch = FormatHelpers.GetRowPitch(width, texture.Format);
                 uint srcDepthPitch = FormatHelpers.GetDepthPitch(srcRowPitch, height, texture.Format);
@@ -1276,7 +1331,7 @@ namespace Veldrid.Vk
                     srcRowPitch, srcDepthPitch,
                     imageBasePtr,
                     x, y, z,
-                    (uint)layout.rowPitch, (uint)layout.depthPitch,
+                    (uint)layout.RowPitch, (uint)layout.DepthPitch,
                     width, height, depth,
                     texture.Format);
             }
@@ -1285,8 +1340,9 @@ namespace Veldrid.Vk
                 VkTexture stagingTex = GetFreeStagingTexture(width, height, depth, texture.Format);
                 UpdateTexture(stagingTex, source, sizeInBytes, 0, 0, 0, width, height, depth, 0, 0);
                 SharedCommandPool pool = GetFreeCommandPool();
-                VkCommandBuffer cb = pool.BeginNewCommandBuffer();
+                Silk.NET.Vulkan.CommandBuffer cb = pool.BeginNewCommandBuffer();
                 VkCommandList.CopyTextureCore_VkCommandBuffer(
+                    _vk,
                     cb,
                     stagingTex, 0, 0, 0, 0, 0,
                     texture, x, y, z, mipLevel, arrayLayer,
@@ -1348,28 +1404,28 @@ namespace Veldrid.Vk
 
         public override void ResetFence(Fence fence)
         {
-            Vulkan.VkFence vkFence = Util.AssertSubtype<Fence, VkFence>(fence).DeviceFence;
-            vkResetFences(_device, 1, ref vkFence);
+            Silk.NET.Vulkan.Fence vkFence = Util.AssertSubtype<Fence, VkFence>(fence).DeviceFence;
+            _vk.ResetFences(_device, 1, &vkFence);
         }
 
         public override bool WaitForFence(Fence fence, ulong nanosecondTimeout)
         {
-            Vulkan.VkFence vkFence = Util.AssertSubtype<Fence, VkFence>(fence).DeviceFence;
-            VkResult result = vkWaitForFences(_device, 1, ref vkFence, true, nanosecondTimeout);
-            return result == VkResult.Success;
+            Silk.NET.Vulkan.Fence vkFence = Util.AssertSubtype<Fence, VkFence>(fence).DeviceFence;
+            var result = _vk.WaitForFences(_device, 1, &vkFence, true, nanosecondTimeout);
+            return result == Silk.NET.Vulkan.Result.Success;
         }
 
         public override bool WaitForFences(Fence[] fences, bool waitAll, ulong nanosecondTimeout)
         {
             int fenceCount = fences.Length;
-            Vulkan.VkFence* fencesPtr = stackalloc Vulkan.VkFence[fenceCount];
+            Silk.NET.Vulkan.Fence* fencesPtr = stackalloc Silk.NET.Vulkan.Fence[fenceCount];
             for (int i = 0; i < fenceCount; i++)
             {
                 fencesPtr[i] = Util.AssertSubtype<Fence, VkFence>(fences[i]).DeviceFence;
             }
 
-            VkResult result = vkWaitForFences(_device, (uint)fenceCount, fencesPtr, waitAll, nanosecondTimeout);
-            return result == VkResult.Success;
+            var result = _vk.WaitForFences(_device, (uint)fenceCount, fencesPtr, waitAll, nanosecondTimeout);
+            return result == Silk.NET.Vulkan.Result.Success;
         }
 
         internal static bool IsSupported()
@@ -1383,32 +1439,36 @@ namespace Veldrid.Vk
             {
                 return false;
             }
+            Silk.NET.Vulkan.Vk _vk = Silk.NET.Vulkan.Vk.GetApi();
 
-            VkInstanceCreateInfo instanceCI = VkInstanceCreateInfo.New();
-            VkApplicationInfo applicationInfo = new VkApplicationInfo();
-            applicationInfo.apiVersion = new VkVersion(1, 0, 0);
-            applicationInfo.applicationVersion = new VkVersion(1, 0, 0);
-            applicationInfo.engineVersion = new VkVersion(1, 0, 0);
-            applicationInfo.pApplicationName = s_name;
-            applicationInfo.pEngineName = s_name;
+            Silk.NET.Vulkan.InstanceCreateInfo instanceCI =  new Silk.NET.Vulkan.InstanceCreateInfo();
+            instanceCI.SType = Silk.NET.Vulkan.StructureType.InstanceCreateInfo;
 
-            instanceCI.pApplicationInfo = &applicationInfo;
+            Silk.NET.Vulkan.ApplicationInfo applicationInfo = new Silk.NET.Vulkan.ApplicationInfo();
+            applicationInfo.ApiVersion = new VkVersion(1, 0, 0);
+            applicationInfo.ApplicationVersion = new VkVersion(1, 0, 0);
+            applicationInfo.EngineVersion = new VkVersion(1, 0, 0);
+            applicationInfo.PApplicationName = s_name;
+            applicationInfo.PEngineName = s_name;
+            applicationInfo.SType = Silk.NET.Vulkan.StructureType.ApplicationInfo;
 
-            VkResult result = vkCreateInstance(ref instanceCI, null, out VkInstance testInstance);
-            if (result != VkResult.Success)
+            instanceCI.PApplicationInfo = &applicationInfo;
+
+            var result = _vk.CreateInstance(&instanceCI, null, out Silk.NET.Vulkan.Instance testInstance);
+            if (result != Silk.NET.Vulkan.Result.Success)
             {
                 return false;
             }
 
             uint physicalDeviceCount = 0;
-            result = vkEnumeratePhysicalDevices(testInstance, ref physicalDeviceCount, null);
-            if (result != VkResult.Success || physicalDeviceCount == 0)
+            result = _vk.EnumeratePhysicalDevices(testInstance, ref physicalDeviceCount, null);
+            if (result != Silk.NET.Vulkan.Result.Success || physicalDeviceCount == 0)
             {
-                vkDestroyInstance(testInstance, null);
+                _vk.DestroyInstance(testInstance, null);
                 return false;
             }
 
-            vkDestroyInstance(testInstance, null);
+            _vk.DestroyInstance(testInstance, null);
 
             HashSet<string> instanceExtensions = new HashSet<string>(GetInstanceExtensions());
             if (!instanceExtensions.Contains(CommonStrings.VK_KHR_SURFACE_EXTENSION_NAME))
@@ -1451,68 +1511,72 @@ namespace Veldrid.Vk
             return false;
         }
 
-        internal void ClearColorTexture(VkTexture texture, VkClearColorValue color)
+        internal void ClearColorTexture(VkTexture texture, Silk.NET.Vulkan.ClearColorValue color)
         {
             uint effectiveLayers = texture.ArrayLayers;
             if ((texture.Usage & TextureUsage.Cubemap) != 0)
             {
                 effectiveLayers *= 6;
             }
-            VkImageSubresourceRange range = new VkImageSubresourceRange(
-                 VkImageAspectFlags.Color,
+            Silk.NET.Vulkan.ImageSubresourceRange range = new Silk.NET.Vulkan.ImageSubresourceRange(
+                 Silk.NET.Vulkan.ImageAspectFlags.ImageAspectColorBit,
                  0,
                  texture.MipLevels,
                  0,
                  effectiveLayers);
+
             SharedCommandPool pool = GetFreeCommandPool();
-            VkCommandBuffer cb = pool.BeginNewCommandBuffer();
-            texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, effectiveLayers, VkImageLayout.TransferDstOptimal);
-            vkCmdClearColorImage(cb, texture.OptimalDeviceImage, VkImageLayout.TransferDstOptimal, &color, 1, &range);
-            VkImageLayout colorLayout = texture.IsSwapchainTexture ? VkImageLayout.PresentSrcKHR : VkImageLayout.ColorAttachmentOptimal;
+            Silk.NET.Vulkan.CommandBuffer cb = pool.BeginNewCommandBuffer();
+            texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, effectiveLayers, Silk.NET.Vulkan.ImageLayout.TransferDstOptimal);
+            _vk.CmdClearColorImage(cb, texture.OptimalDeviceImage, Silk.NET.Vulkan.ImageLayout.TransferDstOptimal, &color, 1, &range);
+            Silk.NET.Vulkan.ImageLayout colorLayout = texture.IsSwapchainTexture ? Silk.NET.Vulkan.ImageLayout.PresentSrcKhr : Silk.NET.Vulkan.ImageLayout.ColorAttachmentOptimal;
             texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, effectiveLayers, colorLayout);
             pool.EndAndSubmit(cb);
         }
 
-        internal void ClearDepthTexture(VkTexture texture, VkClearDepthStencilValue clearValue)
+        internal void ClearDepthTexture(VkTexture texture, Silk.NET.Vulkan.ClearDepthStencilValue clearValue)
         {
             uint effectiveLayers = texture.ArrayLayers;
             if ((texture.Usage & TextureUsage.Cubemap) != 0)
             {
                 effectiveLayers *= 6;
             }
-            VkImageAspectFlags aspect = FormatHelpers.IsStencilFormat(texture.Format)
-                ? VkImageAspectFlags.Depth | VkImageAspectFlags.Stencil
-                : VkImageAspectFlags.Depth;
-            VkImageSubresourceRange range = new VkImageSubresourceRange(
+            Silk.NET.Vulkan.ImageAspectFlags aspect = FormatHelpers.IsStencilFormat(texture.Format)
+                ? Silk.NET.Vulkan.ImageAspectFlags.ImageAspectDepthBit | Silk.NET.Vulkan.ImageAspectFlags.ImageAspectStencilBit
+                : Silk.NET.Vulkan.ImageAspectFlags.ImageAspectDepthBit;
+            Silk.NET.Vulkan.ImageSubresourceRange range = new Silk.NET.Vulkan.ImageSubresourceRange(
                 aspect,
                 0,
                 texture.MipLevels,
                 0,
                 effectiveLayers);
+
+
+
             SharedCommandPool pool = GetFreeCommandPool();
-            VkCommandBuffer cb = pool.BeginNewCommandBuffer();
-            texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, effectiveLayers, VkImageLayout.TransferDstOptimal);
-            vkCmdClearDepthStencilImage(
+            Silk.NET.Vulkan.CommandBuffer cb = pool.BeginNewCommandBuffer();
+            texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, effectiveLayers, Silk.NET.Vulkan.ImageLayout.TransferDstOptimal);
+            _vk.CmdClearDepthStencilImage(
                 cb,
                 texture.OptimalDeviceImage,
-                VkImageLayout.TransferDstOptimal,
+                Silk.NET.Vulkan.ImageLayout.TransferDstOptimal,
                 &clearValue,
                 1,
                 &range);
-            texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, effectiveLayers, VkImageLayout.DepthStencilAttachmentOptimal);
+            texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, effectiveLayers, Silk.NET.Vulkan.ImageLayout.DepthStencilAttachmentOptimal);
             pool.EndAndSubmit(cb);
         }
 
         internal override uint GetUniformBufferMinOffsetAlignmentCore()
-            => (uint)_physicalDeviceProperties.limits.minUniformBufferOffsetAlignment;
+            => (uint)_physicalDeviceProperties.Limits.MinUniformBufferOffsetAlignment;
 
         internal override uint GetStructuredBufferMinOffsetAlignmentCore()
-            => (uint)_physicalDeviceProperties.limits.minStorageBufferOffsetAlignment;
+            => (uint)_physicalDeviceProperties.Limits.MinStorageBufferOffsetAlignment;
 
-        internal void TransitionImageLayout(VkTexture texture, VkImageLayout layout)
+        internal void TransitionImageLayout(VkTexture texture, Silk.NET.Vulkan.ImageLayout layout)
         {
             SharedCommandPool pool = GetFreeCommandPool();
-            VkCommandBuffer cb = pool.BeginNewCommandBuffer();
+            Silk.NET.Vulkan.CommandBuffer cb = pool.BeginNewCommandBuffer();
             texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, texture.ArrayLayers, layout);
             pool.EndAndSubmit(cb);
         }
@@ -1521,43 +1585,52 @@ namespace Veldrid.Vk
         private class SharedCommandPool
         {
             private readonly VkGraphicsDevice _gd;
-            private readonly VkCommandPool _pool;
-            private readonly VkCommandBuffer _cb;
+            private readonly Silk.NET.Vulkan.Vk _vk;
+            private readonly Silk.NET.Vulkan.CommandPool _pool;
+            private readonly Silk.NET.Vulkan.CommandBuffer _cb;
 
             public bool IsCached { get; }
 
             public SharedCommandPool(VkGraphicsDevice gd, bool isCached)
             {
                 _gd = gd;
+                _vk = gd.vk;
+
                 IsCached = isCached;
 
-                VkCommandPoolCreateInfo commandPoolCI = VkCommandPoolCreateInfo.New();
-                commandPoolCI.flags = VkCommandPoolCreateFlags.Transient | VkCommandPoolCreateFlags.ResetCommandBuffer;
-                commandPoolCI.queueFamilyIndex = _gd.GraphicsQueueIndex;
-                VkResult result = vkCreateCommandPool(_gd.Device, ref commandPoolCI, null, out _pool);
+                Silk.NET.Vulkan.CommandPoolCreateInfo commandPoolCI = new Silk.NET.Vulkan.CommandPoolCreateInfo();
+                commandPoolCI.SType = Silk.NET.Vulkan.StructureType.CommandPoolCreateInfo;
+
+                commandPoolCI.Flags = Silk.NET.Vulkan.CommandPoolCreateFlags.CommandPoolCreateTransientBit | Silk.NET.Vulkan.CommandPoolCreateFlags.CommandPoolCreateResetCommandBufferBit;
+                commandPoolCI.QueueFamilyIndex = _gd.GraphicsQueueIndex;
+                var result = _vk.CreateCommandPool(_gd.Device, &commandPoolCI, null, out _pool);
                 CheckResult(result);
 
-                VkCommandBufferAllocateInfo allocateInfo = VkCommandBufferAllocateInfo.New();
-                allocateInfo.commandBufferCount = 1;
-                allocateInfo.level = VkCommandBufferLevel.Primary;
-                allocateInfo.commandPool = _pool;
-                result = vkAllocateCommandBuffers(_gd.Device, ref allocateInfo, out _cb);
+                Silk.NET.Vulkan.CommandBufferAllocateInfo allocateInfo = new Silk.NET.Vulkan.CommandBufferAllocateInfo();
+                allocateInfo.SType = Silk.NET.Vulkan.StructureType.CommandBufferAllocateInfo;
+
+                allocateInfo.CommandBufferCount = 1;
+                allocateInfo.Level = Silk.NET.Vulkan.CommandBufferLevel.Primary;
+                allocateInfo.CommandPool = _pool;
+                result = _vk.AllocateCommandBuffers(_gd.Device, &allocateInfo, out _cb);
                 CheckResult(result);
             }
 
-            public VkCommandBuffer BeginNewCommandBuffer()
+            public Silk.NET.Vulkan.CommandBuffer BeginNewCommandBuffer()
             {
-                VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.New();
-                beginInfo.flags = VkCommandBufferUsageFlags.OneTimeSubmit;
-                VkResult result = vkBeginCommandBuffer(_cb, ref beginInfo);
+                Silk.NET.Vulkan.CommandBufferBeginInfo beginInfo = new Silk.NET.Vulkan.CommandBufferBeginInfo();
+                beginInfo.SType = Silk.NET.Vulkan.StructureType.CommandBufferBeginInfo;
+
+                beginInfo.Flags = Silk.NET.Vulkan.CommandBufferUsageFlags.CommandBufferUsageOneTimeSubmitBit;
+                var result = _vk.BeginCommandBuffer(_cb, &beginInfo);
                 CheckResult(result);
 
                 return _cb;
             }
 
-            public void EndAndSubmit(VkCommandBuffer cb)
+            public void EndAndSubmit(Silk.NET.Vulkan.CommandBuffer cb)
             {
-                VkResult result = vkEndCommandBuffer(cb);
+                var result = _vk.EndCommandBuffer(cb);
                 CheckResult(result);
                 _gd.SubmitCommandBuffer(null, cb, 0, null, 0, null, null);
                 lock (_gd._stagingResourcesLock)
@@ -1568,16 +1641,16 @@ namespace Veldrid.Vk
 
             internal void Destroy()
             {
-                vkDestroyCommandPool(_gd.Device, _pool, null);
+                _vk.DestroyCommandPool(_gd.Device, _pool, null);
             }
         }
 
         private struct FenceSubmissionInfo
         {
-            public Vulkan.VkFence Fence;
+            public Silk.NET.Vulkan.Fence Fence;
             public VkCommandList CommandList;
-            public VkCommandBuffer CommandBuffer;
-            public FenceSubmissionInfo(Vulkan.VkFence fence, VkCommandList commandList, VkCommandBuffer commandBuffer)
+            public Silk.NET.Vulkan.CommandBuffer CommandBuffer;
+            public FenceSubmissionInfo(Silk.NET.Vulkan.Fence fence, VkCommandList commandList, Silk.NET.Vulkan.CommandBuffer commandBuffer)
             {
                 Fence = fence;
                 CommandList = commandList;
@@ -1586,40 +1659,40 @@ namespace Veldrid.Vk
         }
     }
 
-    internal unsafe delegate VkResult vkCreateDebugReportCallbackEXT_d(
-        VkInstance instance,
-        VkDebugReportCallbackCreateInfoEXT* createInfo,
+    internal unsafe delegate Silk.NET.Vulkan.Result vkCreateDebugReportCallbackEXT_d(
+        Silk.NET.Vulkan.Instance instance,
+        Silk.NET.Vulkan.DebugReportCallbackCreateInfoEXT* createInfo,
         IntPtr allocatorPtr,
-        out VkDebugReportCallbackEXT ret);
+        out Silk.NET.Vulkan.DebugReportCallbackEXT ret);
 
     internal unsafe delegate void vkDestroyDebugReportCallbackEXT_d(
-        VkInstance instance,
-        VkDebugReportCallbackEXT callback,
-        VkAllocationCallbacks* pAllocator);
+        Silk.NET.Vulkan.Instance instance,
+       Silk.NET.Vulkan.DebugReportCallbackEXT callback,
+        Silk.NET.Vulkan.AllocationCallbacks* pAllocator);
 
-    internal unsafe delegate VkResult vkDebugMarkerSetObjectNameEXT_t(VkDevice device, VkDebugMarkerObjectNameInfoEXT* pNameInfo);
-    internal unsafe delegate void vkCmdDebugMarkerBeginEXT_t(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo);
-    internal unsafe delegate void vkCmdDebugMarkerEndEXT_t(VkCommandBuffer commandBuffer);
-    internal unsafe delegate void vkCmdDebugMarkerInsertEXT_t(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo);
+    internal unsafe delegate Silk.NET.Vulkan.Result vkDebugMarkerSetObjectNameEXT_t(Silk.NET.Vulkan.Device device, Silk.NET.Vulkan.DebugMarkerObjectNameInfoEXT* pNameInfo);
+    internal unsafe delegate void vkCmdDebugMarkerBeginEXT_t(Silk.NET.Vulkan.CommandBuffer commandBuffer, Silk.NET.Vulkan.DebugMarkerMarkerInfoEXT* pMarkerInfo);
+    internal unsafe delegate void vkCmdDebugMarkerEndEXT_t(Silk.NET.Vulkan.CommandBuffer commandBuffer);
+    internal unsafe delegate void vkCmdDebugMarkerInsertEXT_t(Silk.NET.Vulkan.CommandBuffer commandBuffer, Silk.NET.Vulkan.DebugMarkerMarkerInfoEXT* pMarkerInfo);
 
-    internal unsafe delegate void vkGetBufferMemoryRequirements2_t(VkDevice device, VkBufferMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements);
-    internal unsafe delegate void vkGetImageMemoryRequirements2_t(VkDevice device, VkImageMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements);
+    internal unsafe delegate void vkGetBufferMemoryRequirements2_t(Silk.NET.Vulkan.Device device, Silk.NET.Vulkan.BufferMemoryRequirementsInfo2KHR* pInfo, Silk.NET.Vulkan.MemoryRequirements2KHR* pMemoryRequirements);
+    internal unsafe delegate void vkGetImageMemoryRequirements2_t(Silk.NET.Vulkan.Device device, Silk.NET.Vulkan.ImageMemoryRequirementsInfo2KHR* pInfo, Silk.NET.Vulkan.MemoryRequirements2KHR* pMemoryRequirements);
 
-    internal unsafe delegate void vkGetPhysicalDeviceProperties2_t(VkPhysicalDevice physicalDevice, void* properties);
+    internal unsafe delegate void vkGetPhysicalDeviceProperties2_t(Silk.NET.Vulkan.PhysicalDevice physicalDevice, void* properties);
 
     // VK_EXT_metal_surface
 
-    internal unsafe delegate VkResult vkCreateMetalSurfaceEXT_t(
-        VkInstance instance,
+    internal unsafe delegate Silk.NET.Vulkan.Result vkCreateMetalSurfaceEXT_t(
+        Silk.NET.Vulkan.Instance instance,
         VkMetalSurfaceCreateInfoEXT* pCreateInfo,
-        VkAllocationCallbacks* pAllocator,
-        VkSurfaceKHR* pSurface);
+        Silk.NET.Vulkan.AllocationCallbacks* pAllocator,
+        Silk.NET.Vulkan.SurfaceKHR* pSurface);
 
     internal unsafe struct VkMetalSurfaceCreateInfoEXT
     {
-        public const VkStructureType VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT = (VkStructureType)1000217000;
+        public const Silk.NET.Vulkan.StructureType VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT = (Silk.NET.Vulkan.StructureType)1000217000;
 
-        public VkStructureType sType;
+        public Silk.NET.Vulkan.StructureType sType;
         public void* pNext;
         public uint flags;
         public void* pLayer;
@@ -1629,18 +1702,18 @@ namespace Veldrid.Vk
     {
         public const int DriverNameLength = 256;
         public const int DriverInfoLength = 256;
-        public const VkStructureType VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES = (VkStructureType)1000196000;
+        public const Silk.NET.Vulkan.StructureType VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES = (Silk.NET.Vulkan.StructureType)1000196000;
 
-        public VkStructureType sType;
+        public Silk.NET.Vulkan.StructureType sType;
         public void* pNext;
         public VkDriverId driverID;
         public fixed byte driverName[DriverNameLength];
         public fixed byte driverInfo[DriverInfoLength];
-        public VkConformanceVersion conformanceVersion;
+        public Silk.NET.Vulkan.ConformanceVersion conformanceVersion;
 
-        public static VkPhysicalDeviceDriverProperties New()
+        public static Silk.NET.Vulkan.PhysicalDeviceDriverProperties New()
         {
-            return new VkPhysicalDeviceDriverProperties() { sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES };
+            return new Silk.NET.Vulkan.PhysicalDeviceDriverProperties() { SType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES };
         }
     }
 
@@ -1648,11 +1721,4 @@ namespace Veldrid.Vk
     {
     }
 
-    internal struct VkConformanceVersion
-    {
-        public byte major;
-        public byte minor;
-        public byte subminor;
-        public byte patch;
-    }
 }

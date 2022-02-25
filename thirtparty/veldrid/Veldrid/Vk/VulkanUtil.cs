@@ -1,32 +1,32 @@
 ﻿using System;
 using System.Diagnostics;
-using Vulkan;
-using static Vulkan.VulkanNative;
 
 namespace Veldrid.Vk
 {
     internal unsafe static class VulkanUtil
     {
+        public const uint QueueFamilyIgnored = ~0U;
+
         private static Lazy<bool> s_isVulkanLoaded = new Lazy<bool>(TryLoadVulkan);
         private static readonly Lazy<string[]> s_instanceExtensions = new Lazy<string[]>(EnumerateInstanceExtensions);
 
         [Conditional("DEBUG")]
-        public static void CheckResult(VkResult result)
+        public static void CheckResult(Silk.NET.Vulkan.Result result)
         {
-            if (result != VkResult.Success)
+            if (result != Silk.NET.Vulkan.Result.Success)
             {
                 throw new VeldridException("Unsuccessful VkResult: " + result);
             }
         }
 
-        public static bool TryFindMemoryType(VkPhysicalDeviceMemoryProperties memProperties, uint typeFilter, VkMemoryPropertyFlags properties, out uint typeIndex)
+        public static bool TryFindMemoryType(Silk.NET.Vulkan.PhysicalDeviceMemoryProperties memProperties, uint typeFilter, Silk.NET.Vulkan.MemoryPropertyFlags properties, out uint typeIndex)
         {
             typeIndex = 0;
 
-            for (int i = 0; i < memProperties.memoryTypeCount; i++)
+            for (int i = 0; i < memProperties.MemoryTypeCount; i++)
             {
                 if (((typeFilter & (1 << i)) != 0)
-                    && (memProperties.GetMemoryType((uint)i).propertyFlags & properties) == properties)
+                    && (memProperties.GetMemoryType((uint)i).PropertyFlags & properties) == properties)
                 {
                     typeIndex = (uint)i;
                     return true;
@@ -38,21 +38,23 @@ namespace Veldrid.Vk
 
         public static string[] EnumerateInstanceLayers()
         {
+            var _vk = Silk.NET.Vulkan.Vk.GetApi();
+
             uint propCount = 0;
-            VkResult result = vkEnumerateInstanceLayerProperties(ref propCount, null);
+            var result = _vk.EnumerateInstanceLayerProperties(ref propCount, null);
             CheckResult(result);
             if (propCount == 0)
             {
                 return Array.Empty<string>();
             }
 
-            VkLayerProperties[] props = new VkLayerProperties[propCount];
-            vkEnumerateInstanceLayerProperties(ref propCount, ref props[0]);
+            Silk.NET.Vulkan.LayerProperties[] props = new Silk.NET.Vulkan.LayerProperties[propCount];
+            _vk.EnumerateInstanceLayerProperties(ref propCount, ref props[0]);
 
             string[] ret = new string[propCount];
             for (int i = 0; i < propCount; i++)
             {
-                fixed (byte* layerNamePtr = props[i].layerName)
+                fixed (byte* layerNamePtr = props[i].LayerName)
                 {
                     ret[i] = Util.GetString(layerNamePtr);
                 }
@@ -70,9 +72,11 @@ namespace Veldrid.Vk
                 return Array.Empty<string>();
             }
 
+            var _vk = Silk.NET.Vulkan.Vk.GetApi();
+
             uint propCount = 0;
-            VkResult result = vkEnumerateInstanceExtensionProperties((byte*)null, ref propCount, null);
-            if (result != VkResult.Success)
+            var result = _vk.EnumerateInstanceExtensionProperties((byte*)null, ref propCount, null);
+            if (result != Silk.NET.Vulkan.Result.Success)
             {
                 return Array.Empty<string>();
             }
@@ -82,13 +86,13 @@ namespace Veldrid.Vk
                 return Array.Empty<string>();
             }
 
-            VkExtensionProperties[] props = new VkExtensionProperties[propCount];
-            vkEnumerateInstanceExtensionProperties((byte*)null, ref propCount, ref props[0]);
+            Silk.NET.Vulkan.ExtensionProperties[] props = new Silk.NET.Vulkan.ExtensionProperties[propCount];
+            _vk.EnumerateInstanceExtensionProperties((byte*)null, ref propCount, ref props[0]);
 
             string[] ret = new string[propCount];
             for (int i = 0; i < propCount; i++)
             {
-                fixed (byte* extensionNamePtr = props[i].extensionName)
+                fixed (byte* extensionNamePtr = props[i].ExtensionName)
                 {
                     ret[i] = Util.GetString(extensionNamePtr);
                 }
@@ -103,204 +107,209 @@ namespace Veldrid.Vk
             try
             {
                 uint propCount;
-                vkEnumerateInstanceExtensionProperties((byte*)null, &propCount, null);
+                Silk.NET.Vulkan.Vk.GetApi().EnumerateInstanceExtensionProperties((byte*)null, &propCount, null);
                 return true;
             }
             catch { return false; }
         }
 
         public static void TransitionImageLayout(
-            VkCommandBuffer cb,
-            VkImage image,
+            Silk.NET.Vulkan.Vk _vk,
+            Silk.NET.Vulkan.CommandBuffer cb,
+            Silk.NET.Vulkan.Image  image,
             uint baseMipLevel,
             uint levelCount,
             uint baseArrayLayer,
             uint layerCount,
-            VkImageAspectFlags aspectMask,
-            VkImageLayout oldLayout,
-            VkImageLayout newLayout)
+            Silk.NET.Vulkan.ImageAspectFlags aspectMask,
+            Silk.NET.Vulkan.ImageLayout oldLayout,
+            Silk.NET.Vulkan.ImageLayout newLayout)
         {
             Debug.Assert(oldLayout != newLayout);
-            VkImageMemoryBarrier barrier = VkImageMemoryBarrier.New();
-            barrier.oldLayout = oldLayout;
-            barrier.newLayout = newLayout;
-            barrier.srcQueueFamilyIndex = QueueFamilyIgnored;
-            barrier.dstQueueFamilyIndex = QueueFamilyIgnored;
-            barrier.image = image;
-            barrier.subresourceRange.aspectMask = aspectMask;
-            barrier.subresourceRange.baseMipLevel = baseMipLevel;
-            barrier.subresourceRange.levelCount = levelCount;
-            barrier.subresourceRange.baseArrayLayer = baseArrayLayer;
-            barrier.subresourceRange.layerCount = layerCount;
 
-            VkPipelineStageFlags srcStageFlags = VkPipelineStageFlags.None;
-            VkPipelineStageFlags dstStageFlags = VkPipelineStageFlags.None;
+            var barrier = new Silk.NET.Vulkan.ImageMemoryBarrier();
+            barrier.SType = Silk.NET.Vulkan.StructureType.ImageMemoryBarrier;
 
-            if ((oldLayout == VkImageLayout.Undefined || oldLayout == VkImageLayout.Preinitialized) && newLayout == VkImageLayout.TransferDstOptimal)
+            barrier.OldLayout = oldLayout;
+            barrier.NewLayout = newLayout;
+            barrier.SrcQueueFamilyIndex = QueueFamilyIgnored;
+            barrier.DstQueueFamilyIndex = QueueFamilyIgnored;
+            barrier.Image = image;
+            barrier.SubresourceRange = new Silk.NET.Vulkan.ImageSubresourceRange();
+            barrier.SubresourceRange.AspectMask = aspectMask;
+            barrier.SubresourceRange.BaseMipLevel = baseMipLevel;
+            barrier.SubresourceRange.LevelCount = levelCount;
+            barrier.SubresourceRange.BaseArrayLayer = baseArrayLayer;
+            barrier.SubresourceRange.LayerCount = layerCount;
+
+            Silk.NET.Vulkan.PipelineStageFlags srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageNone;
+            Silk.NET.Vulkan.PipelineStageFlags dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageNone;
+
+            if ((oldLayout == Silk.NET.Vulkan.ImageLayout.Undefined || oldLayout == Silk.NET.Vulkan.ImageLayout.Preinitialized) && newLayout == Silk.NET.Vulkan.ImageLayout.TransferDstOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.None;
-                barrier.dstAccessMask = VkAccessFlags.TransferWrite;
-                srcStageFlags = VkPipelineStageFlags.TopOfPipe;
-                dstStageFlags = VkPipelineStageFlags.Transfer;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessNone;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferWriteBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTopOfPipeBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
             }
-            else if (oldLayout == VkImageLayout.ShaderReadOnlyOptimal && newLayout == VkImageLayout.TransferSrcOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal && newLayout == Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.ShaderRead;
-                barrier.dstAccessMask = VkAccessFlags.TransferRead;
-                srcStageFlags = VkPipelineStageFlags.FragmentShader;
-                dstStageFlags = VkPipelineStageFlags.Transfer;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessShaderReadBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageFragmentShaderBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
             }
-            else if (oldLayout == VkImageLayout.ShaderReadOnlyOptimal && newLayout == VkImageLayout.TransferDstOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal && newLayout == Silk.NET.Vulkan.ImageLayout.TransferDstOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.ShaderRead;
-                barrier.dstAccessMask = VkAccessFlags.TransferWrite;
-                srcStageFlags = VkPipelineStageFlags.FragmentShader;
-                dstStageFlags = VkPipelineStageFlags.Transfer;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessShaderReadBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferWriteBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageFragmentShaderBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
             }
-            else if (oldLayout == VkImageLayout.Preinitialized && newLayout == VkImageLayout.TransferSrcOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.Preinitialized && newLayout == Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.None;
-                barrier.dstAccessMask = VkAccessFlags.TransferRead;
-                srcStageFlags = VkPipelineStageFlags.TopOfPipe;
-                dstStageFlags = VkPipelineStageFlags.Transfer;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessNone;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTopOfPipeBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
             }
-            else if (oldLayout == VkImageLayout.Preinitialized && newLayout == VkImageLayout.General)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.Preinitialized && newLayout == Silk.NET.Vulkan.ImageLayout.General)
             {
-                barrier.srcAccessMask = VkAccessFlags.None;
-                barrier.dstAccessMask = VkAccessFlags.ShaderRead;
-                srcStageFlags = VkPipelineStageFlags.TopOfPipe;
-                dstStageFlags = VkPipelineStageFlags.ComputeShader;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessNone;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessShaderReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTopOfPipeBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageComputeShaderBit;
             }
-            else if (oldLayout == VkImageLayout.Preinitialized && newLayout == VkImageLayout.ShaderReadOnlyOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.Preinitialized && newLayout == Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.None;
-                barrier.dstAccessMask = VkAccessFlags.ShaderRead;
-                srcStageFlags = VkPipelineStageFlags.TopOfPipe;
-                dstStageFlags = VkPipelineStageFlags.FragmentShader;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessNone;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessShaderReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTopOfPipeBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageFragmentShaderBit;
             }
-            else if (oldLayout == VkImageLayout.General && newLayout == VkImageLayout.ShaderReadOnlyOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.General && newLayout == Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.TransferRead;
-                barrier.dstAccessMask = VkAccessFlags.ShaderRead;
-                srcStageFlags = VkPipelineStageFlags.Transfer;
-                dstStageFlags = VkPipelineStageFlags.FragmentShader;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferReadBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessShaderReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageFragmentShaderBit;
             }
-            else if (oldLayout == VkImageLayout.ShaderReadOnlyOptimal && newLayout == VkImageLayout.General)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal && newLayout == Silk.NET.Vulkan.ImageLayout.General)
             {
-                barrier.srcAccessMask = VkAccessFlags.ShaderRead;
-                barrier.dstAccessMask = VkAccessFlags.ShaderRead;
-                srcStageFlags = VkPipelineStageFlags.FragmentShader;
-                dstStageFlags = VkPipelineStageFlags.ComputeShader;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessShaderReadBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessShaderReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageFragmentShaderBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageComputeShaderBit;
             }
 
-            else if (oldLayout == VkImageLayout.TransferSrcOptimal && newLayout == VkImageLayout.ShaderReadOnlyOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal && newLayout == Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.TransferRead;
-                barrier.dstAccessMask = VkAccessFlags.ShaderRead;
-                srcStageFlags = VkPipelineStageFlags.Transfer;
-                dstStageFlags = VkPipelineStageFlags.FragmentShader;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferReadBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessShaderReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageFragmentShaderBit;
             }
-            else if (oldLayout == VkImageLayout.TransferDstOptimal && newLayout == VkImageLayout.ShaderReadOnlyOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.TransferDstOptimal && newLayout == Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.TransferWrite;
-                barrier.dstAccessMask = VkAccessFlags.ShaderRead;
-                srcStageFlags = VkPipelineStageFlags.Transfer;
-                dstStageFlags = VkPipelineStageFlags.FragmentShader;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferWriteBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessShaderReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageFragmentShaderBit;
             }
-            else if (oldLayout == VkImageLayout.TransferSrcOptimal && newLayout == VkImageLayout.TransferDstOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal && newLayout == Silk.NET.Vulkan.ImageLayout.TransferDstOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.TransferRead;
-                barrier.dstAccessMask = VkAccessFlags.TransferWrite;
-                srcStageFlags = VkPipelineStageFlags.Transfer;
-                dstStageFlags = VkPipelineStageFlags.Transfer;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferReadBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferWriteBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
             }
-            else if (oldLayout == VkImageLayout.TransferDstOptimal && newLayout == VkImageLayout.TransferSrcOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.TransferDstOptimal && newLayout == Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.TransferWrite;
-                barrier.dstAccessMask = VkAccessFlags.TransferRead;
-                srcStageFlags = VkPipelineStageFlags.Transfer;
-                dstStageFlags = VkPipelineStageFlags.Transfer;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferWriteBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
             }
-            else if (oldLayout == VkImageLayout.ColorAttachmentOptimal && newLayout == VkImageLayout.TransferSrcOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.ColorAttachmentOptimal && newLayout == Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.ColorAttachmentWrite;
-                barrier.dstAccessMask = VkAccessFlags.TransferRead;
-                srcStageFlags = VkPipelineStageFlags.ColorAttachmentOutput;
-                dstStageFlags = VkPipelineStageFlags.Transfer;
+                barrier.SrcAccessMask =  Silk.NET.Vulkan.AccessFlags.AccessColorAttachmentWriteBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageColorAttachmentOutputBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
             }
-            else if (oldLayout == VkImageLayout.ColorAttachmentOptimal && newLayout == VkImageLayout.TransferDstOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.ColorAttachmentOptimal && newLayout == Silk.NET.Vulkan.ImageLayout.TransferDstOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.ColorAttachmentWrite;
-                barrier.dstAccessMask = VkAccessFlags.TransferWrite;
-                srcStageFlags = VkPipelineStageFlags.ColorAttachmentOutput;
-                dstStageFlags = VkPipelineStageFlags.Transfer;
+                barrier.SrcAccessMask =  Silk.NET.Vulkan.AccessFlags.AccessColorAttachmentWriteBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferWriteBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageColorAttachmentOutputBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
             }
-            else if (oldLayout == VkImageLayout.ColorAttachmentOptimal && newLayout == VkImageLayout.ShaderReadOnlyOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.ColorAttachmentOptimal && newLayout == Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.ColorAttachmentWrite;
-                barrier.dstAccessMask = VkAccessFlags.ShaderRead;
-                srcStageFlags = VkPipelineStageFlags.ColorAttachmentOutput;
-                dstStageFlags = VkPipelineStageFlags.FragmentShader;
+                barrier.SrcAccessMask =  Silk.NET.Vulkan.AccessFlags.AccessColorAttachmentWriteBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessShaderReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageColorAttachmentOutputBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageFragmentShaderBit;
             }
-            else if (oldLayout == VkImageLayout.DepthStencilAttachmentOptimal && newLayout == VkImageLayout.ShaderReadOnlyOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.DepthStencilAttachmentOptimal && newLayout == Silk.NET.Vulkan.ImageLayout.ShaderReadOnlyOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.DepthStencilAttachmentWrite;
-                barrier.dstAccessMask = VkAccessFlags.ShaderRead;
-                srcStageFlags = VkPipelineStageFlags.LateFragmentTests;
-                dstStageFlags = VkPipelineStageFlags.FragmentShader;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessDepthStencilAttachmentWriteBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessShaderReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageLateFragmentTestsBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageFragmentShaderBit;
             }
-            else if (oldLayout == VkImageLayout.ColorAttachmentOptimal && newLayout == VkImageLayout.PresentSrcKHR)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.ColorAttachmentOptimal && newLayout == Silk.NET.Vulkan.ImageLayout.PresentSrcKhr)
             {
-                barrier.srcAccessMask = VkAccessFlags.ColorAttachmentWrite;
-                barrier.dstAccessMask = VkAccessFlags.MemoryRead;
-                srcStageFlags = VkPipelineStageFlags.ColorAttachmentOutput;
-                dstStageFlags = VkPipelineStageFlags.BottomOfPipe;
+                barrier.SrcAccessMask =  Silk.NET.Vulkan.AccessFlags.AccessColorAttachmentWriteBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessMemoryReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageColorAttachmentOutputBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageBottomOfPipeBit;
             }
-            else if (oldLayout == VkImageLayout.TransferDstOptimal && newLayout == VkImageLayout.PresentSrcKHR)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.TransferDstOptimal && newLayout == Silk.NET.Vulkan.ImageLayout.PresentSrcKhr)
             {
-                barrier.srcAccessMask = VkAccessFlags.TransferWrite;
-                barrier.dstAccessMask = VkAccessFlags.MemoryRead;
-                srcStageFlags = VkPipelineStageFlags.Transfer;
-                dstStageFlags = VkPipelineStageFlags.BottomOfPipe;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferWriteBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessMemoryReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageBottomOfPipeBit;
             }
-            else if (oldLayout == VkImageLayout.TransferDstOptimal && newLayout == VkImageLayout.ColorAttachmentOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.TransferDstOptimal && newLayout == Silk.NET.Vulkan.ImageLayout.ColorAttachmentOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.TransferWrite;
-                barrier.dstAccessMask = VkAccessFlags.ColorAttachmentWrite;
-                srcStageFlags = VkPipelineStageFlags.Transfer;
-                dstStageFlags = VkPipelineStageFlags.ColorAttachmentOutput;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferWriteBit;
+                barrier.DstAccessMask =  Silk.NET.Vulkan.AccessFlags.AccessColorAttachmentWriteBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageColorAttachmentOutputBit;
             }
-            else if (oldLayout == VkImageLayout.TransferDstOptimal && newLayout == VkImageLayout.DepthStencilAttachmentOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.TransferDstOptimal && newLayout == Silk.NET.Vulkan.ImageLayout.DepthStencilAttachmentOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.TransferWrite;
-                barrier.dstAccessMask = VkAccessFlags.DepthStencilAttachmentWrite;
-                srcStageFlags = VkPipelineStageFlags.Transfer;
-                dstStageFlags = VkPipelineStageFlags.LateFragmentTests;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferWriteBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessDepthStencilAttachmentWriteBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageLateFragmentTestsBit;
             }
-            else if (oldLayout == VkImageLayout.General && newLayout == VkImageLayout.TransferSrcOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.General && newLayout == Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.ShaderWrite;
-                barrier.dstAccessMask = VkAccessFlags.TransferRead;
-                srcStageFlags = VkPipelineStageFlags.ComputeShader;
-                dstStageFlags = VkPipelineStageFlags.Transfer;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessShaderWriteBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageComputeShaderBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
             }
-            else if (oldLayout == VkImageLayout.PresentSrcKHR && newLayout == VkImageLayout.TransferSrcOptimal)
+            else if (oldLayout == Silk.NET.Vulkan.ImageLayout.PresentSrcKhr && newLayout == Silk.NET.Vulkan.ImageLayout.TransferSrcOptimal)
             {
-                barrier.srcAccessMask = VkAccessFlags.MemoryRead;
-                barrier.dstAccessMask = VkAccessFlags.TransferRead;
-                srcStageFlags = VkPipelineStageFlags.BottomOfPipe;
-                dstStageFlags = VkPipelineStageFlags.Transfer;
+                barrier.SrcAccessMask = Silk.NET.Vulkan.AccessFlags.AccessMemoryReadBit;
+                barrier.DstAccessMask = Silk.NET.Vulkan.AccessFlags.AccessTransferReadBit;
+                srcStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageBottomOfPipeBit;
+                dstStageFlags = Silk.NET.Vulkan.PipelineStageFlags.PipelineStageTransferBit;
             }
             else
             {
                 Debug.Fail("Invalid image layout transition.");
             }
 
-            vkCmdPipelineBarrier(
+            _vk.CmdPipelineBarrier(
                 cb,
                 srcStageFlags,
                 dstStageFlags,
-                VkDependencyFlags.None,
+                0,
                 0, null,
                 0, null,
                 1, &barrier);
@@ -309,9 +318,9 @@ namespace Veldrid.Vk
 
     internal unsafe static class VkPhysicalDeviceMemoryPropertiesEx
     {
-        public static VkMemoryType GetMemoryType(this VkPhysicalDeviceMemoryProperties memoryProperties, uint index)
+        public static Silk.NET.Vulkan.MemoryType GetMemoryType(this Silk.NET.Vulkan.PhysicalDeviceMemoryProperties memoryProperties, uint index)
         {
-            return (&memoryProperties.memoryTypes_0)[index];
+            return (&memoryProperties.MemoryTypes.Element0)[index];
         }
     }
 }

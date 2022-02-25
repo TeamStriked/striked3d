@@ -20,8 +20,6 @@ namespace Striked3D.Utils
                 .Select(x => x.Select(v => v.Value).ToList())
                 .ToList();
         }
-
-
         public static IEnumerable<IEnumerable<T>> Split<T>(this T[] array, int size)
         {
             for (int i = 0; i < (float)array.Length / size; i++)

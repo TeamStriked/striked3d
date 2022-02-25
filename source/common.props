@@ -2,13 +2,13 @@
   <PropertyGroup>
       <LangVersion>latest</LangVersion>
       <TargetFramework>netcoreapp3.1</TargetFramework>
+      <GenerateDocumentationFile>true</GenerateDocumentationFile>
       <BaseOutputPath>..\..\build\</BaseOutputPath>
       <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+      <Nullable>enable</Nullable>
+      <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
       <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
       <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
       <Configurations>debug;release</Configurations>
-      <PlatformTarget>AnyCPU</PlatformTarget>
-      <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
-      <PublishTrimmed>true</PublishTrimmed>
     </PropertyGroup>
 </Project>

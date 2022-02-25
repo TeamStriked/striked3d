@@ -18,9 +18,9 @@ namespace Striked3D.Nodes
         {
         }
 
-        public override void UpdateSizes()
+        public override void UpdateSizes(bool withChilds = true)
         {
-            base.UpdateSize();
+            base.UpdateSizes(false);
 
             if (Root != null)
             {

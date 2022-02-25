@@ -1,6 +1,4 @@
-﻿using Vulkan;
-using static Vulkan.VulkanNative;
-using static Veldrid.Vk.VulkanUtil;
+﻿using static Veldrid.Vk.VulkanUtil;
 using System;
 
 namespace Veldrid.Vk
@@ -8,11 +6,11 @@ namespace Veldrid.Vk
     internal unsafe class VkShader : Shader
     {
         private readonly VkGraphicsDevice _gd;
-        private readonly VkShaderModule _shaderModule;
+        private readonly Silk.NET.Vulkan.ShaderModule _shaderModule;
         private bool _disposed;
         private string _name;
 
-        public VkShaderModule ShaderModule => _shaderModule;
+        public Silk.NET.Vulkan.ShaderModule ShaderModule => _shaderModule;
 
         public override bool IsDisposed => _disposed;
 
@@ -21,12 +19,14 @@ namespace Veldrid.Vk
         {
             _gd = gd;
 
-            VkShaderModuleCreateInfo shaderModuleCI = VkShaderModuleCreateInfo.New();
+            Silk.NET.Vulkan.ShaderModuleCreateInfo shaderModuleCI = new Silk.NET.Vulkan.ShaderModuleCreateInfo();
+            shaderModuleCI.SType = Silk.NET.Vulkan.StructureType.ShaderModuleCreateInfo;
+
             fixed (byte* codePtr = description.ShaderBytes)
             {
-                shaderModuleCI.codeSize = (UIntPtr)description.ShaderBytes.Length;
-                shaderModuleCI.pCode = (uint*)codePtr;
-                VkResult result = vkCreateShaderModule(gd.Device, ref shaderModuleCI, null, out _shaderModule);
+                shaderModuleCI.CodeSize = (UIntPtr)description.ShaderBytes.Length;
+                shaderModuleCI.PCode = (uint*)codePtr;
+                var result = gd.vk.CreateShaderModule(gd.Device, &shaderModuleCI, null, out _shaderModule);
                 CheckResult(result);
             }
         }
@@ -46,7 +46,7 @@ namespace Veldrid.Vk
             if (!_disposed)
             {
                 _disposed = true;
-                vkDestroyShaderModule(_gd.Device, ShaderModule, null);
+                _gd.vk.DestroyShaderModule(_gd.Device, ShaderModule, null);
             }
         }
     }

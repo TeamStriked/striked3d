@@ -30,11 +30,19 @@ namespace Veldrid
         private protected Framebuffer _framebuffer;
         private protected Pipeline _graphicsPipeline;
         private protected Pipeline _computePipeline;
+        private protected bool _hasSubPasses = false;
+
+        private protected CommandList mainPass;
 
 #if VALIDATE_USAGE
         private DeviceBuffer _indexBuffer;
         private IndexFormat _indexFormat;
 #endif
+        public bool HasSubPasses => _hasSubPasses;
+
+        private protected bool isDeclaredAsSubpass = false;
+
+        public CommandList MainPass => mainPass;
 
         internal CommandList(
             ref CommandListDescription description,
@@ -65,12 +73,19 @@ namespace Veldrid
         /// </summary>
         public abstract void Begin();
 
+        public abstract void BeginAsSubpass(CommandList mainBuffer);
+        public abstract void BeginWithSubpasses();
+        public abstract void EndAsSubpass();
+        public abstract void EndWithSubpasses(CommandList[] subCommands);
+
+
         /// <summary>
         /// Completes this list of graphics commands, putting it into an executable state for a <see cref="GraphicsDevice"/>.
         /// This function must only be called after <see cref="Begin"/> has been called.
         /// It is an error to call this function in succession, unless <see cref="Begin"/> has been called in between invocations.
         /// </summary>
         public abstract void End();
+
 
         /// <summary>
         /// Sets the active <see cref="Pipeline"/> used for rendering.

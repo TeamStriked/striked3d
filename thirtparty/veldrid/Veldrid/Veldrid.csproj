@@ -7,10 +7,11 @@
     <NoWarn Condition="'$(Configuration)' == 'Debug'">1591</NoWarn>
     <DefineConstants>$(DefineConstants);VALIDATE_USAGE</DefineConstants>
     <DefineConstants Condition="'$(ExcludeD3D11)' == 'true'">$(DefineConstants);EXCLUDE_D3D11_BACKEND</DefineConstants>
+    <DefineConstants Condition="'$(ExcludeD3D12)' == 'true'">$(DefineConstants);EXCLUDE_D3D12_BACKEND</DefineConstants>
     <DefineConstants Condition="'$(ExcludeVulkan)' == 'true'">$(DefineConstants);EXCLUDE_VULKAN_BACKEND</DefineConstants>
     <DefineConstants Condition="'$(ExcludeMetal)' == 'true'">$(DefineConstants);EXCLUDE_METAL_BACKEND</DefineConstants>
     <DefineConstants Condition="'$(ExcludeOpenGL)' == 'true'">$(DefineConstants);EXCLUDE_OPENGL_BACKEND</DefineConstants>
-    <LangVersion>7.3</LangVersion>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
@@ -21,18 +22,27 @@
 
   <ItemGroup>
     <PackageReference Include="NativeLibraryLoader" Version="1.0.12" />
+    <PackageReference Include="Silk.NET.Vulkan" Version="2.13.0" />
+    <PackageReference Include="Silk.NET.Vulkan.Extensions.ANDROID" Version="2.13.0" />
+    <PackageReference Include="Silk.NET.Vulkan.Extensions.EXT" Version="2.13.0" />
+    <PackageReference Include="Silk.NET.Vulkan.Extensions.KHR" Version="2.13.0" />
+    <PackageReference Include="Silk.NET.Vulkan.Extensions.MVK" Version="2.13.0" />
 
-    <PackageReference Include="Vk" Version="1.0.25" Condition="'$(ExcludeVulkan)' != 'true'" />
-
-    <PackageReference Include="Vortice.D3DCompiler" Version="2.1.0" Condition="'$(ExcludeD3D11)' != 'true'" />
+    <PackageReference Include="Vortice.D3DCompiler" Version="2.1.0" Condition="'$(ExcludeD3D11)' != 'true' and '$(ExcludeD3D12)' != 'true'" />
     <PackageReference Include="Vortice.Direct3D11" Version="2.1.0" Condition="'$(ExcludeD3D11)' != 'true'" />
+    <PackageReference Include="Vortice.Direct3D12" Version="2.1.0" Condition="'$(ExcludeD3D12)' != 'true'" />
+    <PackageReference Include="Vortice.DirectX" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="D3D12/**/*" Condition="'$(ExcludeD3D12)' == 'true'" />
     <Compile Remove="D3D11/**/*" Condition="'$(ExcludeD3D11)' == 'true'" />
+    <Compile Remove="D3D12\**" />
     <Compile Remove="Vk/**/*" Condition="'$(ExcludeVulkan)' == 'true'" />
     <Compile Remove="MTL/**/*" Condition="'$(ExcludeMetal)' == 'true'" />
     <Compile Remove="OpenGL/**/*" Condition="'$(ExcludeOpenGL)' == 'true'" />
+    <EmbeddedResource Remove="D3D12\**" />
+    <None Remove="D3D12\**" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(ExcludeMetal)' != 'true'">
@@ -42,6 +52,10 @@
     <EmbeddedResource Include="MTL/EmbeddedShaders/MTL_UnalignedBufferCopy_iOS.metallib">
       <LogicalName>MTL_UnalignedBufferCopy_iOS</LogicalName>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="BackendInfoD3D12.cs" />
   </ItemGroup>
 
   <ItemGroup>

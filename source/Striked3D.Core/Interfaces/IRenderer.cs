@@ -1,4 +1,5 @@
-﻿using Veldrid;
+﻿using System;
+using Veldrid;
 
 namespace Striked3D.Core
 {
@@ -12,6 +13,16 @@ namespace Striked3D.Core
         public ResourceSet DefaultTextureSet { get; }
         public IMaterial Default2DMaterial { get; }
         public IMaterial Default3DMaterial { get; }
+
+        public Sampler LinearSampler { get; }
+
+        public void UpdateTexture(
+       Texture texture,
+       IntPtr source,
+       uint sizeInBytes,
+       uint x, uint y, uint z,
+       uint width, uint height, uint depth,
+       uint mipLevel, uint arrayLayer);
 
         public Shader[] CreateShader(string vertexCode, string fragmentCode);
         public Veldrid.Pipeline CreatePipeline(GraphicsPipelineDescription desc);
@@ -32,6 +43,8 @@ namespace Striked3D.Core
         public DeviceBuffer CreateBuffer(BufferDescription desc);
 
         public ResourceSet CreateResourceSet(ResourceSetDescription description);
+        public TextureView CreateTextureView(Texture target);
+        public Texture CreateTexture(TextureDescription desc);
 
         public void SetResourceSets(ResourceSet[] sets);
         public void BindBuffers(DeviceBuffer vertexBuffer, DeviceBuffer indexBuffer = null);

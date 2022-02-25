@@ -9,7 +9,7 @@ using Veldrid;
 using aiMatrix4x4 = Assimp.Matrix4x4;
 using Striked3D.Core.AssetsPrimitives;
 using Assimp;
-using Silk.NET.Maths;
+using Striked3D.Types;
 using Striked3D.Types;
 
 namespace Striked3D.Core.Assets

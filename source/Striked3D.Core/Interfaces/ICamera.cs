@@ -1,20 +1,20 @@
 ﻿using System.Runtime.InteropServices;
-
+using Striked3D.Types;
 namespace Striked3D.Core
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct CameraInfo
+    public struct CameraInfo 
     {
-        public Silk.NET.Maths.Vector4D<float> viewMatrix0 { get; set; }
-        public Silk.NET.Maths.Vector4D<float> viewMatrix1 { get; set; }
-        public Silk.NET.Maths.Vector4D<float> viewMatrix2 { get; set; }
-        public Silk.NET.Maths.Vector4D<float> viewMatrix3 { get; set; }
+        public Vector4D<float> viewMatrix0 { get; set; }
+        public Vector4D<float> viewMatrix1 { get; set; }
+        public Vector4D<float> viewMatrix2 { get; set; }
+        public Vector4D<float> viewMatrix3 { get; set; }
 
-        public Silk.NET.Maths.Vector4D<float> projectionMatrix0 { get; set; }
-        public Silk.NET.Maths.Vector4D<float> projectionMatrix1 { get; set; }
+        public Vector4D<float> projectionMatrix0 { get; set; }
+        public Vector4D<float> projectionMatrix1 { get; set; }
 
-        public Silk.NET.Maths.Vector4D<float> projectionMatrix2 { get; set; }
-        public Silk.NET.Maths.Vector4D<float> projectionMatrix3 { get; set; }
+        public Vector4D<float> projectionMatrix2 { get; set; }
+        public Vector4D<float> projectionMatrix3 { get; set; }
 
         public float far { get; set; }
         public float near { get; set; }

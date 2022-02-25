@@ -184,6 +184,7 @@ namespace Veldrid.D3D11
             Util.ClearArray(boundSets);
         }
 
+
         public override void End()
         {
             if (_commandList != null)
@@ -1378,6 +1379,27 @@ namespace Veldrid.D3D11
         }
 
         private protected override void PushConstantCore(IntPtr source, uint sizeInBytes)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void BeginAsSubpass(CommandList mainBuffer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void EndAsSubpass()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void EndWithSubpasses(CommandList[] subCommands)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        public override void BeginWithSubpasses()
         {
             throw new NotImplementedException();
         }

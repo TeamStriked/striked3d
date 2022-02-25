@@ -20,28 +20,25 @@ namespace Striked3D.Nodes
         public delegate void OnIsReadyEventHandler();
         public event OnIsReadyEventHandler OnNodeIsReady;
 
-        public bool resetCache = true;
         public bool IsEnterTree = false;
 
         private IViewport _viewPort;
+        private INode _parent;
         public IViewport Viewport
         {
             get
             {
-                if (resetCache || _viewPort == null)
-                {
-                    _viewPort = Root.Services.Get<ScreneTreeService>().GetViewport(Id);
-                    resetCache = false;
-                }
-
                 return _viewPort;
             }
         }
 
         public T GetParent<T>() where T : Node
         {
-            ScreneTreeService service = Root.Services.Get<ScreneTreeService>();
-            return service.GetParent<T>(Id);
+            if (_parent != null)
+            {
+                return _parent as T;
+            }
+            else return null;
         }
 
         public virtual T CreateChild<T>() where T : Node
@@ -72,11 +69,25 @@ namespace Striked3D.Nodes
 
         public T[] GetChilds<T>() where T : Node
         {
-            return Root.Services.Get<ScreneTreeService>().GetChilds<T>(Id);
+            if(Root != null)
+            {
+                return Root.Services.Get<ScreneTreeService>().GetChilds<T>(Id);
+            }
+            else
+                return new T[0];
         }
 
         public Node()
         {
+        }
+
+        public void ResetCache()
+        {
+            if (Root != null)
+            {
+                _viewPort = Root.Services.Get<ScreneTreeService>().GetViewport(Id);
+                _parent = Root.Services.Get<ScreneTreeService>().GetParent<INode>(Id);
+            }
         }
 
         public virtual void Update(double delta)
@@ -85,6 +96,13 @@ namespace Striked3D.Nodes
 
         public virtual void OnEnterTree()
         {
+
+            if(Root != null)
+            {
+                _viewPort = Root.Services.Get<ScreneTreeService>().GetViewport(Id);
+                _parent = Root.Services.Get<ScreneTreeService>().GetParent<INode>(Id);
+            }
+
             IsEnterTree = true;
             OnNodeEnterTree?.Invoke();
         }

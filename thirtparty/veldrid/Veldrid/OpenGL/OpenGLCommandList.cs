@@ -265,5 +265,25 @@ namespace Veldrid.OpenGL
         {
             throw new NotImplementedException();
         }
+
+        public override void BeginAsSubpass(CommandList mainBuffer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void EndAsSubpass()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void EndWithSubpasses(CommandList[] subCommands)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void BeginWithSubpasses()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

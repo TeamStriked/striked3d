@@ -94,7 +94,7 @@ namespace Striked3D.Nodes
 
                 if (!origValue.Equals(value))
                 {
-                    DrawCanvas();
+                    UpdateCanvas();
                 }
             }
         }
@@ -127,7 +127,6 @@ namespace Striked3D.Nodes
 
         public override void DrawCanvas()
         {
-
             RgbaFloat bgColor = isHover ? BackgroundHover : Background;
 
             if (bgColor.A > 0)

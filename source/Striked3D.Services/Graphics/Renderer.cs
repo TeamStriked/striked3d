@@ -41,6 +41,8 @@ namespace Striked3D.Graphics
         public IMaterial Default2DMaterial => service.Default2DMaterial;
         public IMaterial Default3DMaterial => service.Default3DMaterial;
 
+        public Sampler LinearSampler => service.Renderer3D.LinearSampler;
+
         public Shader[] CreateShader(string vertexCode, string fragmentCode)
         {
             if (PlatformInfo.DebugRendering)
@@ -190,6 +192,34 @@ namespace Striked3D.Graphics
             T source) where T : unmanaged
         {
             clist.PushConstant(source);
+        }
+
+        public void UpdateTexture(Texture texture, IntPtr source, uint sizeInBytes, uint x, uint y, uint z, uint width, uint height, uint depth, uint mipLevel, uint arrayLayer)
+        {
+            if (PlatformInfo.DebugRendering)
+            {
+                Logger.Debug(this, "UpdateTexture");
+            }
+
+            service.Renderer3D.UpdateTexture(texture, source, sizeInBytes, x, y, z, width, height, depth, mipLevel, arrayLayer);
+        }
+
+        public TextureView CreateTextureView(Texture target)
+        {
+            if (PlatformInfo.DebugRendering)
+            {
+                Logger.Debug(this, "CreateTextureView");
+            }
+            return service.Renderer3D.ResourceFactory.CreateTextureView(target);
+        }
+
+        public Texture CreateTexture(TextureDescription desc)
+        {
+            if (PlatformInfo.DebugRendering)
+            {
+                Logger.Debug(this, "CreateTexture");
+            }
+            return service.Renderer3D.ResourceFactory.CreateTexture(desc);
         }
     }
 }

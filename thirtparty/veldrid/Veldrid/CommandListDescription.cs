@@ -7,6 +7,8 @@ namespace Veldrid
     /// </summary>
     public struct CommandListDescription : IEquatable<CommandListDescription>
     {
+        public bool isSubpass { get; set; }
+
         /// <summary>
         /// Element-wise equality.
         /// </summary>

@@ -5,10 +5,10 @@ namespace Striked3D.Resources
     [StructLayout(LayoutKind.Sequential)]
     public struct Transform3DInfo
     {
-        public Silk.NET.Maths.Vector4D<float> modelMatrix1 { get; set; }
-        public Silk.NET.Maths.Vector4D<float> modelMatrix2 { get; set; }
-        public Silk.NET.Maths.Vector4D<float> modelMatrix3 { get; set; }
-        public Silk.NET.Maths.Vector4D<float> modelMatrix4 { get; set; }
+        public Striked3D.Types.Vector4D<float> modelMatrix1 { get; set; }
+        public Striked3D.Types.Vector4D<float> modelMatrix2 { get; set; }
+        public Striked3D.Types.Vector4D<float> modelMatrix3 { get; set; }
+        public Striked3D.Types.Vector4D<float> modelMatrix4 { get; set; }
 
         public static uint GetSizeInBytes()
         {

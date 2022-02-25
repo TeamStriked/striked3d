@@ -34,7 +34,7 @@ namespace Striked3D.Core
         }
 
         /// <inheritdoc />
-        public T Get<T>() where T : class, IService
+        public T? Get<T>() where T : class, IService
         {
             if (!TryGetService(typeof(T), out IService service))
             {

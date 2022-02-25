@@ -15,12 +15,13 @@ namespace Striked3D.Nodes
         public EditorGrid() : base()
         {
             vertices = new Vertex[6];
-            vertices[0] = new Vertex { Position = new Silk.NET.Maths.Vector3D<float>(1, 1, 0) };
-            vertices[1] = new Vertex { Position = new Silk.NET.Maths.Vector3D<float>(-1, -1, 0) };
-            vertices[2] = new Vertex { Position = new Silk.NET.Maths.Vector3D<float>(-1, 1, 0) };
-            vertices[3] = new Vertex { Position = new Silk.NET.Maths.Vector3D<float>(-1, -1, 0) };
-            vertices[4] = new Vertex { Position = new Silk.NET.Maths.Vector3D<float>(1, 1, 0) };
-            vertices[5] = new Vertex { Position = new Silk.NET.Maths.Vector3D<float>(1, -1, 0) };
+
+            vertices[0] = new Vertex { Position = new Striked3D.Types.Vector3D<float>(1, 1, 0) };
+            vertices[1] = new Vertex { Position = new Striked3D.Types.Vector3D<float>(-1, -1, 0) };
+            vertices[2] = new Vertex { Position = new Striked3D.Types.Vector3D<float>(-1, 1, 0) };
+            vertices[3] = new Vertex { Position = new Striked3D.Types.Vector3D<float>(-1, -1, 0) };
+            vertices[4] = new Vertex { Position = new Striked3D.Types.Vector3D<float>(1, 1, 0) };
+            vertices[5] = new Vertex { Position = new Striked3D.Types.Vector3D<float>(1, -1, 0) };
 
             _isDirty = true;
         }
@@ -29,10 +30,11 @@ namespace Striked3D.Nodes
         {
             if (Viewport != null && Viewport.World3D != null && Transform != null)
             {
+                Transform.BeforeDraw(renderer);
+                Material?.BeforeDraw(renderer);
+
                 if (_isDirty)
                 {
-                    Transform.BeforeDraw(renderer);
-                    Material?.BeforeDraw(renderer);
 
                     uint size = (uint)vertices.Length * Vertex.GetSizeInBytes();
                     BufferDescription vbDescription = new BufferDescription

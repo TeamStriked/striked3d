@@ -2,15 +2,42 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+
   </PropertyGroup>
 
   <Import Project="..\common.props" />
 
   <ItemGroup>
-    <PackageReference Include="Silk.NET.Maths" Version="2.13.0" />
+    <PackageReference Include="BinaryPack" Version="1.0.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\thirtparty\veldrid\Veldrid\Veldrid.csproj" />
   </ItemGroup>
+
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+<PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.1" />
+</ItemGroup>
+<ItemGroup Condition="'$(TargetFramework)' != 'net5.0'">
+<PackageReference Include="Ultz.Bcl.Half" Version="1.0.0" />
+</ItemGroup>
+<ItemGroup>
+<Compile Update="Scalar.As.cs">
+<DesignTime>True</DesignTime>
+<AutoGen>True</AutoGen>
+<DependentUpon>Scalar.As.tt</DependentUpon>
+</Compile>
+</ItemGroup>
+<ItemGroup>
+<None Update="Scalar.As.tt">
+<Generator>TextTemplatingFileGenerator</Generator>
+<LastGenOutput>Scalar.As.cs</LastGenOutput>
+</None>
+</ItemGroup>
+<ItemGroup>
+  <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+</ItemGroup>
+
 </Project>

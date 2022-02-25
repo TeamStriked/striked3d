@@ -64,6 +64,7 @@ namespace Striked3D.Core.AssetsPrimitives
             }
 
             CommandList cl = rf.CreateCommandList();
+
             cl.Begin();
             cl.CopyTexture(staging, texture);
             cl.End();

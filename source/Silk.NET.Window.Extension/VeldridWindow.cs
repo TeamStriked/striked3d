@@ -8,7 +8,7 @@ using Silk.NET.Core.Contexts;
 using Veldrid;
 using Veldrid.OpenGL;
 using Veldrid.Vk;
-using Vulkan.Xlib;
+using Veldrid.Vk.Xlib;
 
 namespace Silk.NET.Windowing.Extensions.Veldrid
 {

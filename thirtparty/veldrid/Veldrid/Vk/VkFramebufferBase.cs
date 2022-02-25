@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Vulkan;
 
 namespace Veldrid.Vk
 {
@@ -30,12 +29,12 @@ namespace Veldrid.Vk
 
         protected abstract void DisposeCore();
 
-        public abstract Vulkan.VkFramebuffer CurrentFramebuffer { get; }
-        public abstract VkRenderPass RenderPassNoClear_Init { get; }
-        public abstract VkRenderPass RenderPassNoClear_Load { get; }
-        public abstract VkRenderPass RenderPassClear { get; }
+        public abstract Silk.NET.Vulkan.Framebuffer CurrentFramebuffer { get; }
+        public abstract Silk.NET.Vulkan.RenderPass RenderPassNoClear_Init { get; }
+        public abstract Silk.NET.Vulkan.RenderPass RenderPassNoClear_Load { get; }
+        public abstract Silk.NET.Vulkan.RenderPass RenderPassClear { get; }
         public abstract uint AttachmentCount { get; }
-        public abstract void TransitionToIntermediateLayout(VkCommandBuffer cb);
-        public abstract void TransitionToFinalLayout(VkCommandBuffer cb);
+        public abstract void TransitionToIntermediateLayout(Silk.NET.Vulkan.CommandBuffer cb);
+        public abstract void TransitionToFinalLayout(Silk.NET.Vulkan.CommandBuffer cb);
     }
 }

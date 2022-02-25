@@ -1,4 +1,4 @@
-﻿using Silk.NET.Maths;
+﻿using Striked3D.Types;
 using Striked3D.Core;
 using Striked3D.Core.Input;
 using System;
@@ -107,6 +107,7 @@ namespace Striked3D.Nodes
             {
                 Vector2D<float> mousePos = service.GetMousePosition();
                 Vector2D<float> mouseDelta = mousePos - _previousMousePos;
+
                 _previousMousePos = mousePos;
 
                 Yaw += -mouseDelta.X * _mouseSpeed;

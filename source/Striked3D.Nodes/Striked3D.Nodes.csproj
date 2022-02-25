@@ -7,6 +7,7 @@
   <Import Project="..\common.props" />
 
   <ItemGroup>
+    <ProjectReference Include="..\Striked3D.Importer\Striked3D.Importer.csproj" />
     <ProjectReference Include="..\Striked3D.Platform\Striked3D.Platform.csproj" />
     <ProjectReference Include="..\Striked3D.Resources\Striked3D.Resources.csproj" />
     <ProjectReference Include="..\Striked3D.Services\Striked3D.Services.csproj" />

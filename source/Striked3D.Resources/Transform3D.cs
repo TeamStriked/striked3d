@@ -1,4 +1,4 @@
-﻿using Silk.NET.Maths;
+﻿using Striked3D.Types;
 using Striked3D.Core;
 using Striked3D.Graphics;
 using System;
@@ -12,7 +12,7 @@ namespace Striked3D.Resources
         private Vector3D<float> _position = new(0, 0f, 0);
         private Quaternion<float> _rotation = new(0f, 0f, 0f, 1f);
         private Vector3D<float> _scale = new(0.1f, 0.1f, 0.1f);
-        private Silk.NET.Maths.Matrix4X4<float> ModelMatrix { get; set; }
+        private Striked3D.Types.Matrix4X4<float> ModelMatrix { get; set; }
         private bool isInitialized = false;
         private bool isDirty = true;
         private DeviceBuffer modalBuffer;
@@ -85,6 +85,7 @@ namespace Striked3D.Resources
             info.modelMatrix2 = ModelMatrix.Row2;
             info.modelMatrix3 = ModelMatrix.Row3;
             info.modelMatrix4 = ModelMatrix.Row4;
+
             isDirty = true;
         }
 
@@ -123,6 +124,8 @@ namespace Striked3D.Resources
             if (modalBuffer != null && isDirty)
             {
                 renderer.UpdateBuffer(modalBuffer, 0, info);
+                isDirty = false;
+
             }
         }
 

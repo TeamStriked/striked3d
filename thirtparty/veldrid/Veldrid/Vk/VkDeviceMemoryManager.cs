@@ -1,6 +1,4 @@
-﻿using Vulkan;
-using static Vulkan.VulkanNative;
-using static Veldrid.Vk.VulkanUtil;
+﻿using static Veldrid.Vk.VulkanUtil;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System;
@@ -11,8 +9,9 @@ namespace Veldrid.Vk
     {
         private const ulong MinDedicatedAllocationSizeDynamic = 1024 * 1024 * 64;
         private const ulong MinDedicatedAllocationSizeNonDynamic = 1024 * 1024 * 256;
-        private readonly VkDevice _device;
-        private readonly VkPhysicalDevice _physicalDevice;
+        private readonly Silk.NET.Vulkan.Device _device;
+        private readonly Silk.NET.Vulkan.Vk _vk;
+        private readonly Silk.NET.Vulkan.PhysicalDevice _physicalDevice;
         private readonly ulong _bufferImageGranularity;
         private readonly object _lock = new object();
         private ulong _totalAllocatedBytes;
@@ -23,12 +22,14 @@ namespace Veldrid.Vk
         private readonly vkGetImageMemoryRequirements2_t _getImageMemoryRequirements2;
 
         public VkDeviceMemoryManager(
-            VkDevice device,
-            VkPhysicalDevice physicalDevice,
+            Silk.NET.Vulkan.Vk vk,
+            Silk.NET.Vulkan.Device device,
+            Silk.NET.Vulkan.PhysicalDevice physicalDevice,
             ulong bufferImageGranularity,
             vkGetBufferMemoryRequirements2_t getBufferMemoryRequirements2,
             vkGetImageMemoryRequirements2_t getImageMemoryRequirements2)
         {
+            _vk = vk;
             _device = device;
             _physicalDevice = physicalDevice;
             _bufferImageGranularity = bufferImageGranularity;
@@ -37,9 +38,9 @@ namespace Veldrid.Vk
         }
 
         public VkMemoryBlock Allocate(
-            VkPhysicalDeviceMemoryProperties memProperties,
+            Silk.NET.Vulkan.PhysicalDeviceMemoryProperties memProperties,
             uint memoryTypeBits,
-            VkMemoryPropertyFlags flags,
+            Silk.NET.Vulkan.MemoryPropertyFlags flags,
             bool persistentMapped,
             ulong size,
             ulong alignment)
@@ -52,20 +53,20 @@ namespace Veldrid.Vk
                 size,
                 alignment,
                 false,
-                VkImage.Null,
-                Vulkan.VkBuffer.Null);
+                default,
+                default);
         }
 
         public VkMemoryBlock Allocate(
-            VkPhysicalDeviceMemoryProperties memProperties,
+            Silk.NET.Vulkan.PhysicalDeviceMemoryProperties memProperties,
             uint memoryTypeBits,
-            VkMemoryPropertyFlags flags,
+           Silk.NET.Vulkan.MemoryPropertyFlags flags,
             bool persistentMapped,
             ulong size,
             ulong alignment,
             bool dedicated,
-            VkImage dedicatedImage,
-            Vulkan.VkBuffer dedicatedBuffer)
+            Silk.NET.Vulkan.Image dedicatedImage,
+            Silk.NET.Vulkan.Buffer dedicatedBuffer)
         {
             // Round up to the nearest multiple of bufferImageGranularity.
             size = ((size / _bufferImageGranularity) + 1) * _bufferImageGranularity;
@@ -84,21 +85,23 @@ namespace Veldrid.Vk
 
                 if (dedicated || size >= minDedicatedAllocationSize)
                 {
-                    VkMemoryAllocateInfo allocateInfo = VkMemoryAllocateInfo.New();
-                    allocateInfo.allocationSize = size;
-                    allocateInfo.memoryTypeIndex = memoryTypeIndex;
+                    Silk.NET.Vulkan.MemoryAllocateInfo allocateInfo = new Silk.NET.Vulkan.MemoryAllocateInfo();
+                    allocateInfo.SType = Silk.NET.Vulkan.StructureType.MemoryAllocateInfo;
 
-                    VkMemoryDedicatedAllocateInfoKHR dedicatedAI;
+                    allocateInfo.AllocationSize = size;
+                    allocateInfo.MemoryTypeIndex = memoryTypeIndex;
+
+                    Silk.NET.Vulkan.MemoryDedicatedAllocateInfoKHR dedicatedAI;
                     if (dedicated)
                     {
-                        dedicatedAI = VkMemoryDedicatedAllocateInfoKHR.New();
-                        dedicatedAI.buffer = dedicatedBuffer;
-                        dedicatedAI.image = dedicatedImage;
-                        allocateInfo.pNext = &dedicatedAI;
+                        dedicatedAI = new  Silk.NET.Vulkan.MemoryDedicatedAllocateInfoKHR();
+                        dedicatedAI.Buffer = dedicatedBuffer;
+                        dedicatedAI.Image = dedicatedImage;
+                        allocateInfo.PNext = &dedicatedAI;
                     }
 
-                    VkResult allocationResult = vkAllocateMemory(_device, ref allocateInfo, null, out VkDeviceMemory memory);
-                    if (allocationResult != VkResult.Success)
+                    var allocationResult = _vk.AllocateMemory(_device, &allocateInfo, null, out Silk.NET.Vulkan.DeviceMemory memory);
+                    if (allocationResult != Silk.NET.Vulkan.Result.Success)
                     {
                         throw new VeldridException("Unable to allocate sufficient Vulkan memory.");
                     }
@@ -106,8 +109,8 @@ namespace Veldrid.Vk
                     void* mappedPtr = null;
                     if (persistentMapped)
                     {
-                        VkResult mapResult = vkMapMemory(_device, memory, 0, size, 0, &mappedPtr);
-                        if (mapResult != VkResult.Success)
+                        var mapResult = _vk.MapMemory(_device, memory, 0, size, 0, &mappedPtr);
+                        if (mapResult != Silk.NET.Vulkan.Result.Success)
                         {
                             throw new VeldridException("Unable to map newly-allocated Vulkan memory.");
                         }
@@ -136,7 +139,7 @@ namespace Veldrid.Vk
             {
                 if (block.DedicatedAllocation)
                 {
-                    vkFreeMemory(_device, block.DeviceMemory, null);
+                    _vk.FreeMemory(_device, block.DeviceMemory, null);
                 }
                 else
                 {
@@ -152,7 +155,7 @@ namespace Veldrid.Vk
             {
                 if (!_allocatorsByMemoryType.TryGetValue(memoryTypeIndex, out ret))
                 {
-                    ret = new ChunkAllocatorSet(_device, memoryTypeIndex, true);
+                    ret = new ChunkAllocatorSet(_vk, _device, memoryTypeIndex, true);
                     _allocatorsByMemoryType.Add(memoryTypeIndex, ret);
                 }
             }
@@ -160,7 +163,7 @@ namespace Veldrid.Vk
             {
                 if (!_allocatorsByMemoryTypeUnmapped.TryGetValue(memoryTypeIndex, out ret))
                 {
-                    ret = new ChunkAllocatorSet(_device, memoryTypeIndex, false);
+                    ret = new ChunkAllocatorSet(_vk, _device, memoryTypeIndex, false);
                     _allocatorsByMemoryTypeUnmapped.Add(memoryTypeIndex, ret);
                 }
             }
@@ -170,13 +173,15 @@ namespace Veldrid.Vk
 
         private class ChunkAllocatorSet : IDisposable
         {
-            private readonly VkDevice _device;
+            private readonly Silk.NET.Vulkan.Device _device;
             private readonly uint _memoryTypeIndex;
             private readonly bool _persistentMapped;
             private readonly List<ChunkAllocator> _allocators = new List<ChunkAllocator>();
+            private readonly Silk.NET.Vulkan.Vk _vk;
 
-            public ChunkAllocatorSet(VkDevice device, uint memoryTypeIndex, bool persistentMapped)
+            public ChunkAllocatorSet(Silk.NET.Vulkan.Vk vk, Silk.NET.Vulkan.Device device, uint memoryTypeIndex, bool persistentMapped)
             {
+                _vk = vk;
                 _device = device;
                 _memoryTypeIndex = memoryTypeIndex;
                 _persistentMapped = persistentMapped;
@@ -192,7 +197,7 @@ namespace Veldrid.Vk
                     }
                 }
 
-                ChunkAllocator newAllocator = new ChunkAllocator(_device, _memoryTypeIndex, _persistentMapped);
+                ChunkAllocator newAllocator = new ChunkAllocator(_vk, _device, _memoryTypeIndex, _persistentMapped);
                 _allocators.Add(newAllocator);
                 return newAllocator.Allocate(size, alignment, out block);
             }
@@ -201,7 +206,7 @@ namespace Veldrid.Vk
             {
                 foreach (ChunkAllocator chunk in _allocators)
                 {
-                    if (chunk.Memory == block.DeviceMemory)
+                    if (chunk.Memory.Handle == block.DeviceMemory.Handle)
                     {
                         chunk.Free(block);
                     }
@@ -221,35 +226,38 @@ namespace Veldrid.Vk
         {
             private const ulong PersistentMappedChunkSize = 1024 * 1024 * 64;
             private const ulong UnmappedChunkSize = 1024 * 1024 * 256;
-            private readonly VkDevice _device;
+            private readonly Silk.NET.Vulkan.Device _device;
             private readonly uint _memoryTypeIndex;
             private readonly bool _persistentMapped;
             private readonly List<VkMemoryBlock> _freeBlocks = new List<VkMemoryBlock>();
-            private readonly VkDeviceMemory _memory;
+            private readonly Silk.NET.Vulkan.DeviceMemory _memory;
+            private readonly Silk.NET.Vulkan.Vk _vk;
             private readonly void* _mappedPtr;
 
             private ulong _totalMemorySize;
             private ulong _totalAllocatedBytes = 0;
 
-            public VkDeviceMemory Memory => _memory;
+            public Silk.NET.Vulkan.DeviceMemory Memory => _memory;
 
-            public ChunkAllocator(VkDevice device, uint memoryTypeIndex, bool persistentMapped)
+            public ChunkAllocator(Silk.NET.Vulkan.Vk vk, Silk.NET.Vulkan.Device device, uint memoryTypeIndex, bool persistentMapped)
             {
+                _vk = vk;
                 _device = device;
                 _memoryTypeIndex = memoryTypeIndex;
                 _persistentMapped = persistentMapped;
                 _totalMemorySize = persistentMapped ? PersistentMappedChunkSize : UnmappedChunkSize;
 
-                VkMemoryAllocateInfo memoryAI = VkMemoryAllocateInfo.New();
-                memoryAI.allocationSize = _totalMemorySize;
-                memoryAI.memoryTypeIndex = _memoryTypeIndex;
-                VkResult result = vkAllocateMemory(_device, ref memoryAI, null, out _memory);
+                Silk.NET.Vulkan.MemoryAllocateInfo memoryAI = new Silk.NET.Vulkan.MemoryAllocateInfo();
+                memoryAI.SType = Silk.NET.Vulkan.StructureType.MemoryAllocateInfo;
+                memoryAI.AllocationSize = _totalMemorySize;
+                memoryAI.MemoryTypeIndex = _memoryTypeIndex;
+                var result = _vk.AllocateMemory(_device, &memoryAI, null, out _memory);
                 CheckResult(result);
 
                 void* mappedPtr = null;
                 if (persistentMapped)
                 {
-                    result = vkMapMemory(_device, _memory, 0, _totalMemorySize, 0, &mappedPtr);
+                    result = _vk.MapMemory(_device, _memory, 0, _totalMemorySize, 0, &mappedPtr);
                     CheckResult(result);
                 }
                 _mappedPtr = mappedPtr;
@@ -406,7 +414,7 @@ namespace Veldrid.Vk
 
             public void Dispose()
             {
-                vkFreeMemory(_device, _memory, null);
+                _vk.FreeMemory(_device, _memory, null);
             }
         }
 
@@ -426,7 +434,7 @@ namespace Veldrid.Vk
         internal IntPtr Map(VkMemoryBlock memoryBlock)
         {
             void* ret;
-            VkResult result = vkMapMemory(_device, memoryBlock.DeviceMemory, memoryBlock.Offset, memoryBlock.Size, 0, &ret);
+            var result = _vk.MapMemory(_device, memoryBlock.DeviceMemory, memoryBlock.Offset, memoryBlock.Size, 0, &ret);
             CheckResult(result);
             return (IntPtr)ret;
         }
@@ -436,7 +444,7 @@ namespace Veldrid.Vk
     internal unsafe struct VkMemoryBlock : IEquatable<VkMemoryBlock>
     {
         public readonly uint MemoryTypeIndex;
-        public readonly VkDeviceMemory DeviceMemory;
+        public readonly Silk.NET.Vulkan.DeviceMemory DeviceMemory;
         public readonly void* BaseMappedPointer;
         public readonly bool DedicatedAllocation;
 
@@ -448,7 +456,7 @@ namespace Veldrid.Vk
         public ulong End => Offset + Size;
 
         public VkMemoryBlock(
-            VkDeviceMemory memory,
+            Silk.NET.Vulkan.DeviceMemory memory,
             ulong offset,
             ulong size,
             uint memoryTypeIndex,

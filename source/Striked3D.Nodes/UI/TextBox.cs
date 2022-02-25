@@ -39,7 +39,9 @@ namespace Striked3D.Nodes
         public Font Font
         {
             get => _Font;
-            set { SetProperty("Font", ref _Font, value); UpdateSizes(); }
+            set { SetProperty("Font", ref _Font, value); UpdateSizes();
+                UpdateCanvas();
+            }
         }
 
         public RgbaFloat BorderColor
@@ -128,7 +130,9 @@ namespace Striked3D.Nodes
         public float FontSize
         {
             get => _FontSize;
-            set { SetProperty("FontSize", ref _FontSize, value); UpdateSizes(); }
+            set { SetProperty("FontSize", ref _FontSize, value); UpdateSizes();
+                UpdateCanvas();
+            }
         }
 
         public string Content
@@ -141,6 +145,7 @@ namespace Striked3D.Nodes
                 if (orig != value)
                 {
                     UpdateSizes();
+                    UpdateCanvas();
                 }
             }
         }
@@ -163,56 +168,59 @@ namespace Striked3D.Nodes
         }
         public TextBox() : base()
         {
-            OnHover += () => DrawCanvas();
-            OnHoverLeave += () => DrawCanvas();
-            OnFocus += () => DrawCanvas();
-            OnFocusLeave += () => DrawCanvas();
+            OnHover += () => UpdateCanvas();
+            OnHoverLeave += () => UpdateCanvas();
+            OnFocus += () => UpdateCanvas();
+            OnFocusLeave += () => UpdateCanvas();
         }
 
-        /*
-        private void drawBlinker( RgbaFloat foregroundColor)
-        {
-            if (isFocused)
-            {
-                var start = ScreenPosition;
-                start.X += fontMeasure.Size.Width + CursorSpace;
-
-                var end = ScreenPosition;
-                end.X += fontMeasure.Size.Width + CursorSpace;
-                end.Y += ScreenSize.Y;
-
-                this.DrawLine( foregroundColor, start, end, 1.0f);
-            }
-        }
-        */
+  
         private bool isBlinking = true;
 
         public override void DrawCanvas()
         {
-            Silk.NET.Maths.Vector2D<float> pos = ScreenPosition;
+            Striked3D.Types.Vector2D<float> pos = ScreenPosition;
 
             pos.Y += Padding.Y;
             pos.X += Padding.X;
 
+            var newScreenSize = _screenSize;
+            newScreenSize.Y = FontSize + Padding.Y + Padding.W;
+
             RgbaFloat bgColor = isHover ? BackgroundHover : Background;
             if (bgColor.A != 0)
             {
-                DrawRect(bgColor, ScreenPosition, ScreenSize);
-                // this.DrawRectBorder( _BorderColor, ScreenPosition, ScreenPostionEnd, BorderThickness);
+                DrawRect(bgColor, ScreenPosition, newScreenSize);
             }
+
 
             RgbaFloat foregroundColor = isHover ? ColorHover : Color;
             if (foregroundColor.A != 0)
             {
                 DrawText(_Font, foregroundColor, pos, FontSize, Content);
-
-                if (isFocused)
-                {
-                    // drawBlinker(foregroundColor);
-                }
             }
 
-            _screenSize.Y = FontSize + Padding.Y + Padding.Z;
+            _screenSize = newScreenSize;
+
+            if (foregroundColor.A != 0 && isFocused)
+            {
+                var posBLinkerStart = pos;
+                var posBlinkerEnd = pos;
+
+                posBlinkerEnd.Y += FontSize + Padding.Y / 2;
+
+                var width = this.GetTextWidth(_Font, FontSize, Content);
+
+                posBLinkerStart.X += width;
+                posBlinkerEnd.X += width;
+
+                this.DrawLine(foregroundColor, posBLinkerStart, posBlinkerEnd, 1, 0);
+            }
+
+            if (_BorderColor.A > 0)
+            {
+                this.DrawRectBorder(_BorderColor, ScreenPosition, ScreenPostionEnd, BorderThickness);
+            }
         }
 
         public override void Update(double delta)
@@ -259,19 +267,6 @@ namespace Striked3D.Nodes
             }
 
             backspaceWaitTimeDelta += delta;
-
-            //blinker
-            deltaBlinkingTime += delta;
-
-            if (deltaBlinkingTime >= 0.5)
-            {
-                isBlinking = false;
-            }
-            if (deltaBlinkingTime >= 1.0)
-            {
-                deltaBlinkingTime = 0;
-                isBlinking = true;
-            }
         }
 
         public override void OnInput(InputEvent ev)

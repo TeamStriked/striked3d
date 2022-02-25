@@ -2,7 +2,6 @@
 using System;
 using System.Collections.ObjectModel;
 using Veldrid.Vk;
-using Vulkan;
 
 namespace Veldrid
 {
@@ -80,7 +79,7 @@ namespace Veldrid
             {
                 for (uint level = 0; level < vkTex.MipLevels; level++)
                 {
-                    vkTex.SetImageLayout(level, layer, (VkImageLayout)layout);
+                    vkTex.SetImageLayout(level, layer, (Silk.NET.Vulkan.ImageLayout)layout);
                 }
             }
         }
@@ -111,18 +110,18 @@ namespace Veldrid
         /// <param name="layout">The new VkImageLayout value.</param>
         public void TransitionImageLayout(Texture texture, uint layout)
         {
-            _gd.TransitionImageLayout(Util.AssertSubtype<Texture, VkTexture>(texture), (VkImageLayout)layout);
+            _gd.TransitionImageLayout(Util.AssertSubtype<Texture, VkTexture>(texture), (Silk.NET.Vulkan.ImageLayout)layout);
         }
 
         private unsafe ReadOnlyCollection<ExtensionProperties> EnumerateDeviceExtensions()
         {
-            VkExtensionProperties[] vkProps = _gd.GetDeviceExtensionProperties();
+            Silk.NET.Vulkan.ExtensionProperties[] vkProps = _gd.GetDeviceExtensionProperties();
             ExtensionProperties[] veldridProps = new ExtensionProperties[vkProps.Length];
 
             for (int i = 0; i < vkProps.Length; i++)
             {
-                VkExtensionProperties prop = vkProps[i];
-                veldridProps[i] = new ExtensionProperties(Util.GetString(prop.extensionName), prop.specVersion);
+                Silk.NET.Vulkan.ExtensionProperties prop = vkProps[i];
+                veldridProps[i] = new ExtensionProperties(Util.GetString(prop.ExtensionName), prop.SpecVersion);
             }
 
             return new ReadOnlyCollection<ExtensionProperties>(veldridProps);

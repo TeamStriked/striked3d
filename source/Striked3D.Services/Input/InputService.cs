@@ -1,5 +1,5 @@
 ﻿using Silk.NET.Input;
-using Silk.NET.Maths;
+using Striked3D.Types;
 using Striked3D.Core.Window;
 using Striked3D.Services;
 using System.Linq;

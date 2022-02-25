@@ -76,7 +76,7 @@ namespace Striked3D.Nodes
 
         public override void DrawCanvas()
         {
-            Silk.NET.Maths.Vector2D<float> pos = ScreenPosition;
+            Striked3D.Types.Vector2D<float> pos = ScreenPosition;
             pos.Y += Padding.Y;
             pos.X += Padding.X;
 

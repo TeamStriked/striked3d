@@ -1,4 +1,4 @@
-﻿using Silk.NET.Maths;
+﻿using Striked3D.Types;
 using Striked3D.Core;
 using Striked3D.Resources;
 using Striked3D.Services;
@@ -99,6 +99,12 @@ namespace Striked3D.Nodes
                     createVectorField(layout, "Z", node, prop.Key, "Z");
                 }
 
+                if (prop.Value == typeof(Vector2D<float>))
+                {
+                    createVectorField(layout, "X", node, prop.Key, "X");
+                    createVectorField(layout, "Y", node, prop.Key, "Y");
+                }
+
                 if (prop.Value == typeof(Quaternion<float>))
                 {
                     createVectorField(layout, "X", node, prop.Key, "X");
@@ -140,7 +146,6 @@ namespace Striked3D.Nodes
             {
                 Padding = new Vector4D<int>(5, 5, 5, 5),
                 Content = rowValue.ToString(),
-                Background = new RgbaFloat(1, 0, 0, 1)
             };
             textBox.OnChange += (string value) =>
             {

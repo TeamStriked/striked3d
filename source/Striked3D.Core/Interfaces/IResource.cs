@@ -1,4 +1,5 @@
-﻿namespace Striked3D.Core.Reference
+﻿
+namespace Striked3D.Core.Reference
 {
     public interface IResource : IObject
     {

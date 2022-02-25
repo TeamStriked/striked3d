@@ -18,7 +18,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Silk.NET.Maths" Version="2.13.0" />
+      <PackageReference Include="BinaryPack" Version="1.0.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Striked3D.Types\Striked3D.Types.csproj" />
     </ItemGroup>
 
 </Project>

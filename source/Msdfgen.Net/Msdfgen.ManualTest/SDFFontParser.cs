@@ -4,7 +4,7 @@ using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Silk.NET.Maths;
+using Striked3D.Types;
 
 namespace Msdfgen.ManualTest
 {

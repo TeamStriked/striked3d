@@ -1,4 +1,4 @@
-﻿using Silk.NET.Maths;
+﻿using Striked3D.Types;
 using Striked3D.Core.Input;
 using Striked3D.Types;
 
@@ -97,35 +97,39 @@ namespace Striked3D.Nodes
             }
         }
 
-        public void UpdateSize()
+        public virtual void UpdateSizes(bool withSubElements = true)
         {
             if (Root != null && IsEnterTree)
             {
                 Control parent = GetParent<Control>();
+                var newPos = new Vector2D<float>(0, 0);
+                var newSize = new Vector2D<float>(0, 0);
+
                 if (parent != null)
                 {
-                    _screenPosition = _Position.CalculateSize(parent.ScreenPosition, true);
-                    _screenSize = _Size.CalculateSize(parent.ScreenSize);
+                     newPos = _Position.CalculateSize(parent.ScreenPosition, true);
+                     newSize = _Size.CalculateSize(parent.ScreenSize);
                 }
                 else if (Viewport != null)
                 {
-                    _screenPosition = _Position.CalculateSize(Viewport.Position, true);
-                    _screenSize = _Size.CalculateSize(Viewport.Size);
+                    newPos = _Position.CalculateSize(Viewport.Position, true);
+                    newSize = _Size.CalculateSize(Viewport.Size);
                 }
-            }
 
-            UpdateCanvas();
-        }
-
-        public virtual void UpdateSizes()
-        {
-            if (Root != null && IsEnterTree)
-            {
-                UpdateSize();
-
-                foreach (Control child in GetChilds<Control>())
+                if(!_screenPosition.Equals(newPos) || !_screenSize.Equals(newSize) )
                 {
-                    child.UpdateSizes();
+                    _screenPosition = newPos;
+                    _screenSize = newSize;
+
+                    UpdateCanvas();
+
+                    if(withSubElements)
+                    {
+                        foreach (Control child in GetChilds<Control>())
+                        {
+                            child.UpdateSizes();
+                        }
+                    }
                 }
             }
         }
@@ -143,17 +147,17 @@ namespace Striked3D.Nodes
                 {
                     if (_isHover != true)
                     {
+                        _isHover = true;
                         OnHover?.Invoke();
                     }
-                    _isHover = true;
                 }
                 else
                 {
                     if (_isHover != false)
                     {
+                        _isHover = false;
                         OnHoverLeave?.Invoke();
                     }
-                    _isHover = false;
                 }
             }
 
@@ -166,17 +170,17 @@ namespace Striked3D.Nodes
 
                     if (_isFocused != true)
                     {
+                        _isFocused = true;
                         OnFocus?.Invoke();
                     }
-                    _isFocused = true;
                 }
                 else
                 {
                     if (_isFocused != false)
                     {
+                        _isFocused = false;
                         OnFocusLeave?.Invoke();
                     }
-                    _isFocused = false;
                 }
             }
         }

@@ -88,8 +88,8 @@ void main()
 
     layout(location = 0) out vec4 fsout_Color;
 
-    layout(set = 1, binding = 0) uniform texture2D FontTexture;
-    layout(set = 1, binding = 1) uniform sampler FontTextureSampler;
+   layout(set = 1, binding = 0) uniform texture2D FontTexture;
+  layout(set = 1, binding = 1) uniform sampler FontTextureSampler;
 
     float median(float r, float g, float b) {
 	    return max(min(r, g), min(max(r, g), b));
@@ -99,16 +99,15 @@ void main()
     {
         if(fsin_IsFont >= 1.0f)
         {
-      //      vec2 texSize = vec2(textureSize(sampler2D(FontTexture, FontTextureSampler),0));
-       //     vec2 uvSize = vec2(fsin_UV.x / texSize.x, fsin_UV.y / texSize.y);
+       vec2 texSize = vec2(textureSize(sampler2D(FontTexture, FontTextureSampler),0));
+       vec2 uvSize = vec2(fsin_UV.x / texSize.x, fsin_UV.y / texSize.y);
 
-       //     vec4 colors = texture(sampler2D(FontTexture, FontTextureSampler), uvSize);
-       //     float sigDist = median(colors.r, colors.g, colors.b) ;
-       //     float screenPxDistance = FontRange * (sigDist - 0.5);
-       //     float opacity = clamp(screenPxDistance + 0.5, 0.0, 1.0);
+          vec4 colors = texture(sampler2D(FontTexture, FontTextureSampler), uvSize);
+          float sigDist = median(colors.r, colors.g, colors.b) ;
+           float screenPxDistance = fsin_FontRange * (sigDist - 0.5);
+         float opacity = clamp(screenPxDistance + 0.5, 0.0, 1.0);
 
-        //    fsout_Color = vec4(fsin_Color.rgb, opacity);
-            fsout_Color = vec4(1,1,0,1);
+           fsout_Color = vec4(fsin_Color.rgb, opacity);
         }
         else {
             fsout_Color = fsin_Color;
@@ -125,7 +124,8 @@ void main()
                 //   builder.SetVertexLayout(new VertexLayoutDescription[] { Vertex2D.GetLayout() });
                 builder.SetResourceLayouts(new ResourceLayout[] {
                     renderer.Material2DLayout,
-                    renderer.FontAtlasLayout });
+                    renderer.FontAtlasLayout
+                    });
 
                 builder.Generate(renderer, this);
 

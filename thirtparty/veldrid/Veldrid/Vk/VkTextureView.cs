@@ -1,17 +1,15 @@
-﻿using Vulkan;
-using static Veldrid.Vk.VulkanUtil;
-using static Vulkan.VulkanNative;
+﻿using static Veldrid.Vk.VulkanUtil;
 
 namespace Veldrid.Vk
 {
     internal unsafe class VkTextureView : TextureView
     {
         private readonly VkGraphicsDevice _gd;
-        private readonly VkImageView _imageView;
+        private readonly Silk.NET.Vulkan.ImageView _imageView;
         private bool _destroyed;
         private string _name;
 
-        public VkImageView ImageView => _imageView;
+        public Silk.NET.Vulkan.ImageView ImageView => _imageView;
 
         public new VkTexture Target => (VkTexture)base.Target;
 
@@ -23,22 +21,24 @@ namespace Veldrid.Vk
             : base(ref description)
         {
             _gd = gd;
-            VkImageViewCreateInfo imageViewCI = VkImageViewCreateInfo.New();
-            VkTexture tex = Util.AssertSubtype<Texture, VkTexture>(description.Target);
-            imageViewCI.image = tex.OptimalDeviceImage;
-            imageViewCI.format = VkFormats.VdToVkPixelFormat(Format, (Target.Usage & TextureUsage.DepthStencil) != 0);
+            Silk.NET.Vulkan.ImageViewCreateInfo imageViewCI = new Silk.NET.Vulkan.ImageViewCreateInfo();
+            imageViewCI.SType = Silk.NET.Vulkan.StructureType.ImageViewCreateInfo;
 
-            VkImageAspectFlags aspectFlags;
+            VkTexture tex = Util.AssertSubtype<Texture, VkTexture>(description.Target);
+            imageViewCI.Image = tex.OptimalDeviceImage;
+            imageViewCI.Format = VkFormats.VdToVkPixelFormat(Format, (Target.Usage & TextureUsage.DepthStencil) != 0);
+
+            Silk.NET.Vulkan.ImageAspectFlags aspectFlags;
             if ((description.Target.Usage & TextureUsage.DepthStencil) == TextureUsage.DepthStencil)
             {
-                aspectFlags = VkImageAspectFlags.Depth;
+                aspectFlags = Silk.NET.Vulkan.ImageAspectFlags.ImageAspectDepthBit;
             }
             else
             {
-                aspectFlags = VkImageAspectFlags.Color;
+                aspectFlags = Silk.NET.Vulkan.ImageAspectFlags.ImageAspectColorBit;
             }
 
-            imageViewCI.subresourceRange = new VkImageSubresourceRange(
+            imageViewCI.SubresourceRange = new Silk.NET.Vulkan.ImageSubresourceRange(
                 aspectFlags,
                 description.BaseMipLevel,
                 description.MipLevels,
@@ -47,30 +47,30 @@ namespace Veldrid.Vk
 
             if ((tex.Usage & TextureUsage.Cubemap) == TextureUsage.Cubemap)
             {
-                imageViewCI.viewType = description.ArrayLayers == 1 ? VkImageViewType.ImageCube : VkImageViewType.ImageCubeArray;
-                imageViewCI.subresourceRange.layerCount *= 6;
+                imageViewCI.ViewType = description.ArrayLayers == 1 ? Silk.NET.Vulkan.ImageViewType.Cube : Silk.NET.Vulkan.ImageViewType.CubeArray;
+                imageViewCI.SubresourceRange.LayerCount *= 6;
             }
             else
             {
                 switch (tex.Type)
                 {
                     case TextureType.Texture1D:
-                        imageViewCI.viewType = description.ArrayLayers == 1
-                            ? VkImageViewType.Image1D
-                            : VkImageViewType.Image1DArray;
+                        imageViewCI.ViewType = description.ArrayLayers == 1
+                            ? Silk.NET.Vulkan.ImageViewType.ImageViewType1D
+                            : Silk.NET.Vulkan.ImageViewType.ImageViewType1DArray;
                         break;
                     case TextureType.Texture2D:
-                        imageViewCI.viewType = description.ArrayLayers == 1
-                            ? VkImageViewType.Image2D
-                            : VkImageViewType.Image2DArray;
+                        imageViewCI.ViewType = description.ArrayLayers == 1
+                            ? Silk.NET.Vulkan.ImageViewType.ImageViewType2D
+                            : Silk.NET.Vulkan.ImageViewType.ImageViewType2DArray;
                         break;
                     case TextureType.Texture3D:
-                        imageViewCI.viewType = VkImageViewType.Image3D;
+                        imageViewCI.ViewType = Silk.NET.Vulkan.ImageViewType.ImageViewType3D;
                         break;
                 }
             }
 
-            vkCreateImageView(_gd.Device, ref imageViewCI, null, out _imageView);
+            gd.vk.CreateImageView(_gd.Device, &imageViewCI, null, out _imageView);
             RefCount = new ResourceRefCount(DisposeCore);
         }
 
@@ -94,7 +94,7 @@ namespace Veldrid.Vk
             if (!_destroyed)
             {
                 _destroyed = true;
-                vkDestroyImageView(_gd.Device, ImageView, null);
+                _gd.vk.DestroyImageView(_gd.Device, ImageView, null);
             }
         }
     }
