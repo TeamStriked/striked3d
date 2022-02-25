@@ -1,6 +1,6 @@
-﻿using Striked3D.Types;
-using Striked3D.Core;
+﻿using Striked3D.Core;
 using Striked3D.Core.Input;
+using Striked3D.Types;
 using System;
 
 namespace Striked3D.Nodes

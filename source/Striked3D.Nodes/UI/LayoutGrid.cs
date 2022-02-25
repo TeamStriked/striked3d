@@ -1,5 +1,4 @@
 ﻿using Striked3D.Types;
-using Striked3D.Types;
 using Veldrid;
 
 namespace Striked3D.Nodes

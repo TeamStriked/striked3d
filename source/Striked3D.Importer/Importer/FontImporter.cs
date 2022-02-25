@@ -1,9 +1,5 @@
 ﻿using Msdfgen;
 using Msdfgen.IO;
-using Striked3D.Types;
-using Striked3D.Core;
-using Striked3D.Core.Reference;
-using Striked3D.Core.Window;
 using Striked3D.Resources;
 using Striked3D.Types;
 using Striked3D.Utils;
@@ -11,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Striked3D.Importer
 {
@@ -37,9 +32,9 @@ namespace Striked3D.Importer
             data.ascend = ImportFont.GetFontAscend(fontFace);
             data.decend = ImportFont.GetFontDecend(fontFace);
 
-            var listOfChars = GetAllChars(fontFace);
+            FontGylph[]? listOfChars = GetAllChars(fontFace);
             int maxPossibleItems = (maxBitmapSize * maxBitmapSize) / (renderSize * renderSize);
-            var groupedChars = listOfChars.ToList().ChunkBy(maxPossibleItems);
+            List<List<FontGylph>>? groupedChars = listOfChars.ToList().ChunkBy(maxPossibleItems);
 
             foreach (List<FontGylph> group in groupedChars)
             {
@@ -53,15 +48,15 @@ namespace Striked3D.Importer
 
             return new Font
             {
-                 FontData = data
+                FontData = data
             };
         }
 
         private FontGylph[] GetAllChars(SharpFont.Face fontFace)
         {
-            var list = new List<FontGylph>();
+            List<FontGylph>? list = new List<FontGylph>();
             Generate.IMsdf generator = Generate.Msdf();
-            foreach (var charCode in ImportFont.GetAllChars(fontFace))
+            foreach (char charCode in ImportFont.GetAllChars(fontFace))
             {
                 double advance = 0;
                 Shape shape = ImportFont.LoadGlyph(fontFace, charCode, ref advance);
@@ -85,7 +80,7 @@ namespace Striked3D.Importer
 
         private FontData GenerateAtlas(List<FontGylph> chars, FontData data)
         {
-            var atlasSetId = data.atlasse.Count();
+            int atlasSetId = data.atlasse.Count();
 
             int maxPossibleItems = (maxBitmapSize * maxBitmapSize) / (renderSize * renderSize);
 
@@ -93,7 +88,7 @@ namespace Striked3D.Importer
             int maxPossibleRows = maxPossibleColumns;
 
             int requiredColumns = (chars.Count() > maxPossibleColumns) ? maxPossibleColumns : chars.Count();
-            int requiredRows = (int)Math.Ceiling(((float)chars.Count() / (float)maxPossibleItems) * maxPossibleRows);
+            int requiredRows = (int)Math.Ceiling((chars.Count() / (float)maxPossibleItems) * maxPossibleRows);
 
             int width = requiredColumns * renderSize;
             int height = requiredRows * renderSize;
@@ -103,7 +98,7 @@ namespace Striked3D.Importer
             int currentRow = 0;
             int currentColumn = 0;
 
-            foreach (var gylph in chars)
+            foreach (FontGylph gylph in chars)
             {
                 int regionStartX = currentColumn * renderSize;
                 int regionStartY = currentRow * renderSize;

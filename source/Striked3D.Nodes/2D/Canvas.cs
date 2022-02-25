@@ -1,13 +1,13 @@
-﻿using Striked3D.Types;
-using Striked3D.Core;
+﻿using Striked3D.Core;
 using Striked3D.Engine.Resources;
 using Striked3D.Graphics;
+using Striked3D.Importer;
 using Striked3D.Resources;
+using Striked3D.Types;
 using System;
 using System.Collections.Generic;
-using Veldrid;
 using System.Linq;
-using Striked3D.Importer;
+using Veldrid;
 
 namespace Striked3D.Nodes
 {
@@ -49,15 +49,17 @@ namespace Striked3D.Nodes
         public float GetTextWidth(Font font, float fontSize, string text)
         {
             if (font == null)
+            {
                 return 0;
+            }
 
-            float width =0;
+            float width = 0;
             float scale = (fontSize / FontImporter.renderSize);
             float size = FontImporter.renderSize * scale;
 
             foreach (char c in text)
             {
-                var cacheChar = font.GetChar(c);
+                FontAtlasGylph cacheChar = font.GetChar(c);
 
                 width += (float)cacheChar.advance * scale;
             }
@@ -67,7 +69,9 @@ namespace Striked3D.Nodes
         public void DrawText(Font font, RgbaFloat _color, Vector2D<float> _position, float fontSize, string text)
         {
             if (font == null)
+            {
                 return;
+            }
 
             float xPos = _position.X;
             float scale = (fontSize / FontImporter.renderSize);
@@ -75,7 +79,7 @@ namespace Striked3D.Nodes
 
             foreach (char c in text)
             {
-                var cacheChar = font.GetChar(c);
+                FontAtlasGylph cacheChar = font.GetChar(c);
 
                 float fromX = cacheChar.region.X;
                 float fromY = cacheChar.region.Y;
@@ -149,7 +153,7 @@ namespace Striked3D.Nodes
 
         public void DrawLine(RgbaFloat _color, Vector2D<float> _position, Vector2D<float> _endPosition, float thicknessX, float thicknessY)
         {
-            var size = _endPosition - _position;
+            Vector2D<float> size = _endPosition - _position;
             size.Y += thicknessY;
             size.X += thicknessX;
 
@@ -177,13 +181,13 @@ namespace Striked3D.Nodes
 
                     renderer.BindBuffers(null, renderer.indexDefaultBuffer);
 
-                    foreach (var item in matInfoArray)
+                    foreach (CanvasItem item in matInfoArray)
                     {
                         if (item.info.IsFont > 0)
                         {
-                            var atlas = item.font.GetAtlas(item.atlasId);
+                            FontAtlas? atlas = item.font.GetAtlas(item.atlasId);
 
-                            if(atlas != null)
+                            if (atlas != null)
                             {
                                 renderer.SetResourceSets(new ResourceSet[] {
                                         Viewport.World2D.ResourceSet,
@@ -220,11 +224,11 @@ namespace Striked3D.Nodes
 
         public virtual void BeforeDraw(IRenderer renderer)
         {
-            foreach (var fontInUse in matInfoArray.Where(df => df.font != null).Select(df => df.font).Distinct())
+            foreach (Font? fontInUse in matInfoArray.Where(df => df.font != null).Select(df => df.font).Distinct())
             {
                 fontInUse.Bind(renderer);
             }
-         
+
             if (needsToBeRecreate)
             {
                 Material?.BeforeDraw(renderer);

@@ -1,9 +1,9 @@
-﻿using System.Runtime.InteropServices;
-using Striked3D.Types;
+﻿using Striked3D.Types;
+using System.Runtime.InteropServices;
 namespace Striked3D.Core
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct CameraInfo 
+    public struct CameraInfo
     {
         public Vector4D<float> viewMatrix0 { get; set; }
         public Vector4D<float> viewMatrix1 { get; set; }

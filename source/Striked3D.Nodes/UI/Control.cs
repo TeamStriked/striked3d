@@ -1,5 +1,4 @@
-﻿using Striked3D.Types;
-using Striked3D.Core.Input;
+﻿using Striked3D.Core.Input;
 using Striked3D.Types;
 
 namespace Striked3D.Nodes
@@ -102,13 +101,13 @@ namespace Striked3D.Nodes
             if (Root != null && IsEnterTree)
             {
                 Control parent = GetParent<Control>();
-                var newPos = new Vector2D<float>(0, 0);
-                var newSize = new Vector2D<float>(0, 0);
+                Vector2D<float> newPos = new Vector2D<float>(0, 0);
+                Vector2D<float> newSize = new Vector2D<float>(0, 0);
 
                 if (parent != null)
                 {
-                     newPos = _Position.CalculateSize(parent.ScreenPosition, true);
-                     newSize = _Size.CalculateSize(parent.ScreenSize);
+                    newPos = _Position.CalculateSize(parent.ScreenPosition, true);
+                    newSize = _Size.CalculateSize(parent.ScreenSize);
                 }
                 else if (Viewport != null)
                 {
@@ -116,14 +115,14 @@ namespace Striked3D.Nodes
                     newSize = _Size.CalculateSize(Viewport.Size);
                 }
 
-                if(!_screenPosition.Equals(newPos) || !_screenSize.Equals(newSize) )
+                if (!_screenPosition.Equals(newPos) || !_screenSize.Equals(newSize))
                 {
                     _screenPosition = newPos;
                     _screenSize = newSize;
 
                     UpdateCanvas();
 
-                    if(withSubElements)
+                    if (withSubElements)
                     {
                         foreach (Control child in GetChilds<Control>())
                         {

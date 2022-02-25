@@ -1,12 +1,11 @@
 ﻿using Striked3D.Core.Input;
 using Striked3D.Core.Window;
-using Striked3D.Nodes;
-using Striked3D.Services;
 using Striked3D.Importer;
+using Striked3D.Nodes;
+using Striked3D.Resources;
+using Striked3D.Services;
 using System.Diagnostics;
 using System.Threading;
-using System;
-using Striked3D.Resources;
 
 namespace Striked3D.Editor
 {
@@ -27,9 +26,9 @@ namespace Striked3D.Editor
             win.Services.Register<ScreneTreeService>();
 
             //Setup system font (after build task??)
-            var path = FontImporter.GetSystemFontPath("Arial");
+            string? path = FontImporter.GetSystemFontPath("Arial");
             win.Services.Get<Importer.Importer>().ImportFile<Font>(path, Platform.PlatformInfo.SystemAssetDir, "SystemFont");
-            var font = win.Services.Get<ResourceLoader>().Load<Font>(System.IO.Path.Combine(Platform.PlatformInfo.SystemAssetDir, "SystemFont.stf"));
+            Font? font = win.Services.Get<ResourceLoader>().Load<Font>(System.IO.Path.Combine(Platform.PlatformInfo.SystemAssetDir, "SystemFont.stf"));
             Font.SystemFont = font;
 
             win.OnLoad += () =>

@@ -1,19 +1,11 @@
-﻿using Msdfgen;
-using Msdfgen.IO;
-using Striked3D.Types;
+﻿using BinaryPack;
+using Msdfgen;
 using Striked3D.Core;
-using Striked3D.Services;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Veldrid;
-using Striked3D.Utils;
-using System.Threading.Tasks;
 using Striked3D.Core.Interfaces;
 using Striked3D.Types;
-using Striked3D.Core.Reference;
-using BinaryPack;
+using System;
+using System.Collections.Generic;
+using Veldrid;
 
 namespace Striked3D.Resources
 {
@@ -57,17 +49,14 @@ namespace Striked3D.Resources
 
     public class Font : Resource, ISerializable
     {
-        public FontData _FontData ;
-        public  FontData FontData
+        public FontData _FontData;
+        public FontData FontData
         {
-            get
-            {
-                return _FontData;
-            }
+            get => _FontData;
             set
             {
                 _FontData = value;
-                this.isDirty = true;
+                isDirty = true;
             }
         }
 
@@ -76,7 +65,7 @@ namespace Striked3D.Resources
         private bool isDirty = false;
 
         private readonly List<char> charsInUsage = new();
-        private  Dictionary<int, FontAtlas> renderAtlases = new();
+        private readonly Dictionary<int, FontAtlas> renderAtlases = new();
         public void Bind(IRenderer device)
         {
             if (isDirty == true)
@@ -90,31 +79,31 @@ namespace Striked3D.Resources
         {
             base.Dispose();
 
-            foreach(var atlas in renderAtlases)
+            foreach (KeyValuePair<int, FontAtlas> atlas in renderAtlases)
             {
                 atlas.Value.Dispose();
             }
-            this.renderAtlases.Clear();
+            renderAtlases.Clear();
 
         }
 
         public FontAtlasGylph GetChar(char c)
         {
-            if (!this.FontData.charIds.ContainsKey(c))
+            if (!FontData.charIds.ContainsKey(c))
             {
                 return default;
             }
 
-            return this.FontData.charIds[c];
+            return FontData.charIds[c];
         }
         public FontAtlas GetAtlas(int atlasId)
         {
-            if (!this.renderAtlases.ContainsKey(atlasId))
+            if (!renderAtlases.ContainsKey(atlasId))
             {
                 return default;
             }
 
-            return this.renderAtlases[atlasId];
+            return renderAtlases[atlasId];
         }
 
         private void CreateTexture(IRenderer device)
@@ -122,11 +111,13 @@ namespace Striked3D.Resources
             Dispose();
 
             if (FontData.atlasse.Count <= 0)
-                return;
-
-            foreach (var bitmap in FontData.atlasse)
             {
-                var atlas = new FontAtlas();
+                return;
+            }
+
+            foreach (KeyValuePair<int, Bitmap<FloatRgb>> bitmap in FontData.atlasse)
+            {
+                FontAtlas? atlas = new FontAtlas();
                 if (bitmap.Value.Width == 0 || bitmap.Value.Height == 0)
                 {
                     return;
@@ -172,13 +163,13 @@ namespace Striked3D.Resources
                     }
                 }
 
-                this.renderAtlases.Add(bitmap.Key, atlas);
+                renderAtlases.Add(bitmap.Key, atlas);
             }
         }
 
         public byte[] Serialize()
         {
-            var data = new FontSerializeData
+            FontSerializeData data = new FontSerializeData
             {
                 Id = Id,
                 Data = FontData
@@ -189,10 +180,10 @@ namespace Striked3D.Resources
 
         public void Deserialize(byte[] byteArray)
         {
-            var data = BinaryConverter.Deserialize<FontSerializeData>(byteArray);
+            FontSerializeData data = BinaryConverter.Deserialize<FontSerializeData>(byteArray);
 
-            this.Id = data.Id;
-            this.FontData = data.Data;
+            Id = data.Id;
+            FontData = data.Data;
         }
     }
 }

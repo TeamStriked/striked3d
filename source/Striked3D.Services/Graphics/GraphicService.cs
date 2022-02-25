@@ -1,10 +1,10 @@
-﻿using Striked3D.Types;
-using Silk.NET.Vulkan;
+﻿using Silk.NET.Vulkan;
 using Striked3D.Core;
 using Striked3D.Core.AssetsPrimitives;
 using Striked3D.Core.Window;
 using Striked3D.Graphics;
 using Striked3D.Resources;
+using Striked3D.Types;
 using Striked3D.Utils;
 using System;
 using System.Collections.Generic;
@@ -129,7 +129,7 @@ namespace Striked3D.Services
         {
 
             bool requiredWait = false;
-            var visibles = drawables.Where(df => df.IsVisible);
+            IEnumerable<IDrawable>? visibles = drawables.Where(df => df.IsVisible);
 
             if (drawables != null && drawables.Count > 0)
             {
@@ -176,7 +176,7 @@ namespace Striked3D.Services
             _commandList.ClearColorTarget(0, RgbaFloat.Black);
             _commandList.BeginWithSubpasses();
 
-            var renderCommandList = new List<CommandList>();
+            List<CommandList>? renderCommandList = new List<CommandList>();
 
             if (drawables != null && drawables.Count > 0)
             {
@@ -282,11 +282,11 @@ namespace Striked3D.Services
                     {
                         if (child is IViewport)
                         {
-                           child.OnDraw3D(renderer);
+                            child.OnDraw3D(renderer);
                         }
                         else if (child.Viewport != null && child.Viewport.IsVisible && child.Viewport.Enable3D && !child.Viewport.isDirty)
                         {
-                           child.OnDraw3D(renderer);
+                            child.OnDraw3D(renderer);
                         }
                     }
                     catch (Exception ex)
@@ -304,7 +304,7 @@ namespace Striked3D.Services
             });
         }
 
-        public Task<bool> InitResources( CommandList clist, List<IDrawable> drawables, double delta)
+        public Task<bool> InitResources(CommandList clist, List<IDrawable> drawables, double delta)
         {
             return Task.Factory.StartNew(() =>
             {
@@ -313,7 +313,7 @@ namespace Striked3D.Services
                 clist.PushDebugGroup("Resources - " + Thread.CurrentThread.ManagedThreadId);
                 clist.Begin();
 
-        //        clist.SetFramebuffer(_graphicsDevice.MainSwapchain.Framebuffer);
+                //        clist.SetFramebuffer(_graphicsDevice.MainSwapchain.Framebuffer);
 
                 foreach (IDrawable child in drawables)
                 {
@@ -325,7 +325,7 @@ namespace Striked3D.Services
                         }
                         else if (child.Viewport != null && child.Viewport.IsVisible && child.Viewport.Enable3D && !child.Viewport.isDirty)
                         {
-                           child.BeforeDraw(renderer);
+                            child.BeforeDraw(renderer);
                         }
                     }
                     catch (Exception ex)
@@ -358,7 +358,7 @@ namespace Striked3D.Services
                 threadsCommands[i] = factory.CreateCommandList(new CommandListDescription
                 {
                     isSubpass = true
-                }) ;
+                });
                 threadsCommands3D[i] = factory.CreateCommandList(new CommandListDescription
                 {
                     isSubpass = true
@@ -382,7 +382,7 @@ namespace Striked3D.Services
                 new ResourceLayoutElementDescription("FontTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
                 new ResourceLayoutElementDescription("FontTextureSampler", ResourceKind.Sampler, ShaderStages.Fragment)
             ));
-        
+
 
             TransformLayout = _graphicsDevice.ResourceFactory
                 .CreateResourceLayout(new ResourceLayoutDescription(
@@ -396,14 +396,14 @@ namespace Striked3D.Services
 
             byte[] buffer = new byte[4 * 4 * 4];
 
-            
+
             ProcessedTexture proc = new ProcessedTexture(PixelFormat.R8_G8_B8_A8_UNorm, TextureType.Texture2D, 4, 4, 1, 1, 1, buffer);
             DefaultTexture = proc.CreateDeviceTexture(_graphicsDevice, _graphicsDevice.ResourceFactory, TextureUsage.Sampled);
             DefaultTextureView = _graphicsDevice.ResourceFactory.CreateTextureView(DefaultTexture);
 
             ResourceSetDescription resourceSetDescription = new(FontAtlasLayout, DefaultTextureView, _graphicsDevice.LinearSampler);
             DefaultTextureSet = _graphicsDevice.ResourceFactory.CreateResourceSet(resourceSetDescription);
-            
+
 
             ushort[] indicies = new ushort[6] { 0, 1, 2, 2, 0, 3 };
             BufferDescription ibDescription = new BufferDescription

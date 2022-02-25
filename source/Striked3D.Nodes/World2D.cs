@@ -1,5 +1,5 @@
-﻿using Striked3D.Types;
-using Striked3D.Resources;
+﻿using Striked3D.Resources;
+using Striked3D.Types;
 using Veldrid;
 
 namespace Striked3D.Core.Graphics

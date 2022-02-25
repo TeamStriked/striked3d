@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace Striked3D.Core.Assets
 {
@@ -23,7 +22,7 @@ namespace Striked3D.Core.Assets
             };
         }
 
-        public static T Load<T>(string path) where T: class
+        public static T Load<T>(string path) where T : class
         {
             string extension = Path.GetExtension(path);
 

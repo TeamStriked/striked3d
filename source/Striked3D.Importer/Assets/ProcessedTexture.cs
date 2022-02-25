@@ -1,10 +1,9 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using Veldrid;
 
 namespace Striked3D.Core.AssetsPrimitives
 {
-  
+
     public class ProcessedTextureDataSerializer : BinaryAssetSerializer<ProcessedTexture>
     {
         public override ProcessedTexture ReadT(BinaryReader reader)

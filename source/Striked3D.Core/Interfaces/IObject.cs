@@ -1,6 +1,4 @@
-﻿using BinaryPack.Attributes;
-using BinaryPack.Enums;
-using System;
+﻿using System;
 
 namespace Striked3D.Core
 {

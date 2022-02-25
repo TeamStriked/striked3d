@@ -1,6 +1,6 @@
 ﻿using Silk.NET.Input;
-using Striked3D.Types;
 using Silk.NET.Windowing;
+using Striked3D.Types;
 
 namespace Striked3D.Core.Window
 {
@@ -23,7 +23,7 @@ namespace Striked3D.Core.Window
         /// </summary>
         /// <value>True or false</value>
         public bool VSync { get; set; }
-        
+
         public Vector2D<int> Size { get; set; }
         public WindowState State { get; set; }
 

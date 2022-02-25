@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Striked3D.Core.Interfaces
+﻿namespace Striked3D.Core.Interfaces
 {
     public struct SerializableField<T>
     {

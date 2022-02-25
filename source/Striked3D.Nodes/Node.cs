@@ -24,13 +24,7 @@ namespace Striked3D.Nodes
 
         private IViewport _viewPort;
         private INode _parent;
-        public IViewport Viewport
-        {
-            get
-            {
-                return _viewPort;
-            }
-        }
+        public IViewport Viewport => _viewPort;
 
         public T GetParent<T>() where T : Node
         {
@@ -38,7 +32,10 @@ namespace Striked3D.Nodes
             {
                 return _parent as T;
             }
-            else return null;
+            else
+            {
+                return null;
+            }
         }
 
         public virtual T CreateChild<T>() where T : Node
@@ -69,12 +66,14 @@ namespace Striked3D.Nodes
 
         public T[] GetChilds<T>() where T : Node
         {
-            if(Root != null)
+            if (Root != null)
             {
                 return Root.Services.Get<ScreneTreeService>().GetChilds<T>(Id);
             }
             else
+            {
                 return new T[0];
+            }
         }
 
         public Node()
@@ -97,7 +96,7 @@ namespace Striked3D.Nodes
         public virtual void OnEnterTree()
         {
 
-            if(Root != null)
+            if (Root != null)
             {
                 _viewPort = Root.Services.Get<ScreneTreeService>().GetViewport(Id);
                 _parent = Root.Services.Get<ScreneTreeService>().GetParent<INode>(Id);

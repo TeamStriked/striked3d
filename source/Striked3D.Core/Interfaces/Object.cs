@@ -11,7 +11,7 @@ namespace Striked3D.Core
     {
         private Guid id = Guid.NewGuid();
 
-        public virtual Guid Id { get { return id; } set { id = value; } }
+        public virtual Guid Id { get => id; set => id = value; }
 
         public virtual void Dispose()
         {

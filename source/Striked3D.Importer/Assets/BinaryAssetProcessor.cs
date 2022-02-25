@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
+﻿using System.IO;
 
 namespace Striked3D.Core.Assets
 {
@@ -12,7 +9,10 @@ namespace Striked3D.Core.Assets
 
     public abstract class BinaryAssetProcessor<T> : BinaryAssetProcessor
     {
-        public override object Process(Stream stream, string extension) => ProcessT(stream, extension);
+        public override object Process(Stream stream, string extension)
+        {
+            return ProcessT(stream, extension);
+        }
 
         public abstract T ProcessT(Stream stream, string extension);
     }

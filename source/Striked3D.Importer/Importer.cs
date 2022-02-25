@@ -1,18 +1,9 @@
-﻿using BinaryPack;
-using Msdfgen;
-using Msdfgen.IO;
-using Striked3D.Types;
-using Striked3D.Core;
+﻿using Striked3D.Core;
 using Striked3D.Core.Interfaces;
-using Striked3D.Core.Reference;
 using Striked3D.Core.Window;
-using Striked3D.Resources;
-using Striked3D.Types;
-using Striked3D.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Striked3D.Importer
@@ -23,11 +14,11 @@ namespace Striked3D.Importer
         FAILED
     }
 
-    public  class Importer : IService
+    public class Importer : IService
     {
-        private static Queue<Task> taskQueue = new Queue<Task>();
+        private static readonly Queue<Task> taskQueue = new Queue<Task>();
 
-        private Dictionary<string, ImportProcessor> extensions = new();
+        private readonly Dictionary<string, ImportProcessor> extensions = new();
 
         public Importer()
         {
@@ -36,20 +27,20 @@ namespace Striked3D.Importer
 
         public ImporterState ImportFile<T>(string inputPath, string outputPath, string fileName, bool reImport = false) where T : ISerializable
         {
-            var extension = Path.GetExtension(inputPath);
+            string? extension = Path.GetExtension(inputPath);
             if (!extensions.ContainsKey(extension))
             {
                 throw new Exception("Cant find extension " + extension + " in loader list");
             }
 
-            var loader = extensions[extension];
-            var writePath = System.IO.Path.Combine(outputPath, fileName + loader.OutputExtension);
+            ImportProcessor? loader = extensions[extension];
+            string? writePath = System.IO.Path.Combine(outputPath, fileName + loader.OutputExtension);
 
             try
             {
                 if (File.Exists(writePath))
                 {
-                    if(reImport)
+                    if (reImport)
                     {
                         System.IO.File.Delete(writePath);
                     }
@@ -61,8 +52,8 @@ namespace Striked3D.Importer
 
                 Logger.Debug(this, "Start parse " + inputPath + " to " + writePath);
 
-                T result = (T) loader.Import(inputPath);
-                var byteArray = result.Serialize();
+                T result = (T)loader.Import(inputPath);
+                byte[]? byteArray = result.Serialize();
 
                 File.WriteAllBytes(writePath, byteArray);
 
@@ -81,8 +72,9 @@ namespace Striked3D.Importer
 
         public void ImportFileAsync<T>(string inputPath, string outputPath, string fileName, bool reImport = false, Action<ImporterState> onFinish = null) where T : ISerializable
         {
-            var task = new Task<ImporterState>(() => {
-                var result =  this.ImportFile<T>(inputPath, outputPath, fileName, reImport);
+            Task<ImporterState>? task = new Task<ImporterState>(() =>
+            {
+                ImporterState result = ImportFile<T>(inputPath, outputPath, fileName, reImport);
                 return result;
             });
 
@@ -99,7 +91,7 @@ namespace Striked3D.Importer
         public void Register(IWindow window)
         {
 
-           
+
         }
 
         public void Unregister()

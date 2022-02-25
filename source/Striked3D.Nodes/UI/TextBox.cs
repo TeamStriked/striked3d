@@ -15,7 +15,7 @@ namespace Striked3D.Nodes
         private string _Key = "";
 
 
-        private double deltaBlinkingTime = 0;
+        private readonly double deltaBlinkingTime = 0;
         private double backspaceWaitTimeDelta = 0;
 
         private string newInput = null;
@@ -39,7 +39,9 @@ namespace Striked3D.Nodes
         public Font Font
         {
             get => _Font;
-            set { SetProperty("Font", ref _Font, value); UpdateSizes();
+            set
+            {
+                SetProperty("Font", ref _Font, value); UpdateSizes();
                 UpdateCanvas();
             }
         }
@@ -130,7 +132,9 @@ namespace Striked3D.Nodes
         public float FontSize
         {
             get => _FontSize;
-            set { SetProperty("FontSize", ref _FontSize, value); UpdateSizes();
+            set
+            {
+                SetProperty("FontSize", ref _FontSize, value); UpdateSizes();
                 UpdateCanvas();
             }
         }
@@ -174,8 +178,8 @@ namespace Striked3D.Nodes
             OnFocusLeave += () => UpdateCanvas();
         }
 
-  
-        private bool isBlinking = true;
+
+        private readonly bool isBlinking = true;
 
         public override void DrawCanvas()
         {
@@ -184,7 +188,7 @@ namespace Striked3D.Nodes
             pos.Y += Padding.Y;
             pos.X += Padding.X;
 
-            var newScreenSize = _screenSize;
+            Types.Vector2D<float> newScreenSize = _screenSize;
             newScreenSize.Y = FontSize + Padding.Y + Padding.W;
 
             RgbaFloat bgColor = isHover ? BackgroundHover : Background;
@@ -204,22 +208,22 @@ namespace Striked3D.Nodes
 
             if (foregroundColor.A != 0 && isFocused)
             {
-                var posBLinkerStart = pos;
-                var posBlinkerEnd = pos;
+                Types.Vector2D<float> posBLinkerStart = pos;
+                Types.Vector2D<float> posBlinkerEnd = pos;
 
                 posBlinkerEnd.Y += FontSize + Padding.Y / 2;
 
-                var width = this.GetTextWidth(_Font, FontSize, Content);
+                float width = GetTextWidth(_Font, FontSize, Content);
 
                 posBLinkerStart.X += width;
                 posBlinkerEnd.X += width;
 
-                this.DrawLine(foregroundColor, posBLinkerStart, posBlinkerEnd, 1, 0);
+                DrawLine(foregroundColor, posBLinkerStart, posBlinkerEnd, 1, 0);
             }
 
             if (_BorderColor.A > 0)
             {
-                this.DrawRectBorder(_BorderColor, ScreenPosition, ScreenPostionEnd, BorderThickness);
+                DrawRectBorder(_BorderColor, ScreenPosition, ScreenPostionEnd, BorderThickness);
             }
         }
 

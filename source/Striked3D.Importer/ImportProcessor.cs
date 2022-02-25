@@ -1,9 +1,4 @@
-﻿using Striked3D.Core;
-using Striked3D.Core.Interfaces;
-using Striked3D.Core.Reference;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Striked3D.Core.Interfaces;
 
 namespace Striked3D.Importer
 {
@@ -14,7 +9,11 @@ namespace Striked3D.Importer
     }
     public abstract class ImportProcessor<T> : ImportProcessor where T : ISerializable
     {
-        public override object Import(string filePath) => DoImport(filePath);
+        public override object Import(string filePath)
+        {
+            return DoImport(filePath);
+        }
+
         public abstract T DoImport(string filePath);
     }
 }

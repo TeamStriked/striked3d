@@ -1,6 +1,5 @@
 ﻿using Striked3D.Resources;
 using Striked3D.Types;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
@@ -171,22 +170,22 @@ namespace Striked3D.Core.AssetsPrimitives
     {
         public override ProcessedModel ReadT(BinaryReader reader)
         {
-           // MeshSurface[] parts = reader.ReadObjectArray(ReadMeshPart);
+            // MeshSurface[] parts = reader.ReadObjectArray(ReadMeshPart);
 
             return new ProcessedModel()
             {
-              //  Surfaces = parts
+                //  Surfaces = parts
             };
         }
 
         public override void WriteT(BinaryWriter writer, ProcessedModel value)
         {
-         //   writer.WriteObjectArray(value.Surfaces, WriteMeshPart);
+            //   writer.WriteObjectArray(value.Surfaces, WriteMeshPart);
         }
 
         private void WriteMeshPart(BinaryWriter writer, MeshSurface part)
         {
-        
+
         }
 
         private MeshSurface ReadMeshPart(BinaryReader reader)

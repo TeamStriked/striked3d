@@ -1,43 +1,40 @@
 ﻿
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using Striked3D.Core.AssetsPrimitives;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using Veldrid;
-using Striked3D.Core.AssetsPrimitives;
-using System.Runtime.InteropServices;
 
 namespace Striked3D.Core.Assets
 {
     public class ImageSharpProcessor : BinaryAssetProcessor<ProcessedTexture>
     {
-        public unsafe override ProcessedTexture ProcessT(Stream stream, string extension)
+        public override unsafe ProcessedTexture ProcessT(Stream stream, string extension)
         {
             Image<Rgba32> image = Image.Load<Rgba32>(stream);
             Image<Rgba32>[] mipmaps = GenerateMipmaps(image, out int totalSize);
 
             byte[] allTexData = new byte[totalSize];
-            long offset = 0;
             fixed (byte* allTexDataPtr = allTexData)
             {
                 foreach (Image<Rgba32> mipmap in mipmaps)
                 {
-                  /*  long mipSize = mipmap.Width * mipmap.Height * sizeof(Rgba32);
-                    if (!mipmap.TryGetSinglePixelSpan(out Span<Rgba32> pixelSpan))
-                    {
-                        throw new VeldridException("Unable to get image pixelspan.");
-                    }
-                    fixed (void* pixelPtr = &MemoryMarshal.GetReference(pixelSpan))
-                    {
-                        Buffer.MemoryCopy(pixelPtr, allTexDataPtr + offset, mipSize, mipSize);
-                    }
+                    /*  long mipSize = mipmap.Width * mipmap.Height * sizeof(Rgba32);
+                      if (!mipmap.TryGetSinglePixelSpan(out Span<Rgba32> pixelSpan))
+                      {
+                          throw new VeldridException("Unable to get image pixelspan.");
+                      }
+                      fixed (void* pixelPtr = &MemoryMarshal.GetReference(pixelSpan))
+                      {
+                          Buffer.MemoryCopy(pixelPtr, allTexDataPtr + offset, mipSize, mipSize);
+                      }
 
-                    offset += mipSize;
-                  */
+                      offset += mipSize;
+                    */
                 }
             }
 

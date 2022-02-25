@@ -1,24 +1,21 @@
-﻿using System;
+﻿using Assimp;
+using Striked3D.Core.AssetsPrimitives;
+using Striked3D.Types;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using Veldrid;
 using aiMatrix4x4 = Assimp.Matrix4x4;
-using Striked3D.Core.AssetsPrimitives;
-using Assimp;
-using Striked3D.Types;
-using Striked3D.Types;
 
 namespace Striked3D.Core.Assets
 {
     public class AssimpProcessor : BinaryAssetProcessor<Striked3D.Resources.Mesh>
     {
-        public unsafe override Striked3D.Resources.Mesh ProcessT(Stream stream, string extension)
+        public override unsafe Striked3D.Resources.Mesh ProcessT(Stream stream, string extension)
         {
-            var generatedMesh = new Striked3D.Resources.Mesh();
+            Resources.Mesh? generatedMesh = new Striked3D.Resources.Mesh();
 
             AssimpContext ac = new AssimpContext();
             Scene scene = ac.ImportFileFromStream(
@@ -28,10 +25,10 @@ namespace Striked3D.Core.Assets
             aiMatrix4x4 rootNodeInverseTransform = scene.RootNode.Transform;
             rootNodeInverseTransform.Inverse();
 
-            List<MeshSurface> parts = new ();
-            List<ProcessedAnimation> animations = new ();
+            List<MeshSurface> parts = new();
+            List<ProcessedAnimation> animations = new();
 
-            HashSet<string> encounteredNames = new ();
+            HashSet<string> encounteredNames = new();
             for (int meshIndex = 0; meshIndex < scene.MeshCount; meshIndex++)
             {
                 Mesh mesh = scene.Meshes[meshIndex];
@@ -49,7 +46,7 @@ namespace Striked3D.Core.Assets
                 int vertexCount = mesh.VertexCount;
 
                 Vertex[] vertices = new Vertex[vertexCount];
-   
+
 
                 uint[] boneIndicies = new uint[vertexCount];
                 float[] boneWeights = new float[vertexCount];
@@ -63,12 +60,13 @@ namespace Striked3D.Core.Assets
                     min = Vector3.Min(min, position);
                     max = Vector3.Max(max, position);
 
-                    vertices[i] = new Vertex();
+                    vertices[i] = new Vertex
+                    {
+                        Position = new Vector3D<float>(position.X, position.Y, position.Z)
+                    };
 
-                    vertices[i].Position = new Vector3D<float>(position.X, position.Y, position.Z);
-
-                    var normal = mesh.Normals[i].ToSystemVector3();
-                    var tangent = mesh.Tangents[i].ToSystemVector3();
+                    Vector3 normal = mesh.Normals[i].ToSystemVector3();
+                    Vector3 tangent = mesh.Tangents[i].ToSystemVector3();
 
                     vertices[i].Normal = new Vector3D<float>(normal.X, normal.Y, normal.Z);
                     vertices[i].Tangent = new Vector3D<float>(tangent.X, tangent.Y, tangent.Z);
@@ -100,50 +98,50 @@ namespace Striked3D.Core.Assets
                     }
                     else
                     {
-                        vertices[i].Uv2 =  Vector2D<float>.Zero;
+                        vertices[i].Uv2 = Vector2D<float>.Zero;
                     }
                 }
 
-            /*
-                Dictionary<string, uint> boneIDsByName = new Dictionary<string, uint>();
+                /*
+                    Dictionary<string, uint> boneIDsByName = new Dictionary<string, uint>();
 
-                if (mesh.HasBones)
-                {
-                    Dictionary<int, int> assignedBoneWeights = new Dictionary<int, int>();
-                    for (uint boneID = 0; boneID < mesh.BoneCount; boneID++)
+                    if (mesh.HasBones)
                     {
-                        Bone bone = mesh.Bones[(int)boneID];
-                        string boneName = bone.Name;
-                        int suffix = 1;
-                        while (boneIDsByName.ContainsKey(boneName))
+                        Dictionary<int, int> assignedBoneWeights = new Dictionary<int, int>();
+                        for (uint boneID = 0; boneID < mesh.BoneCount; boneID++)
                         {
-                            boneName = bone.Name + "_" + suffix.ToString();
-                            suffix += 1;
+                            Bone bone = mesh.Bones[(int)boneID];
+                            string boneName = bone.Name;
+                            int suffix = 1;
+                            while (boneIDsByName.ContainsKey(boneName))
+                            {
+                                boneName = bone.Name + "_" + suffix.ToString();
+                                suffix += 1;
+                            }
+
+                            boneIDsByName.Add(boneName, boneID);
+                            foreach (VertexWeight weight in bone.VertexWeights)
+                            {
+                                int relativeBoneIndex = GetAndIncrementRelativeBoneIndex(assignedBoneWeights, weight.VertexID);
+
+                                boneIndicies[relativeBoneIndex] = boneID;
+                                boneWeights[relativeBoneIndex] = weight.Weight;
+                            }
+
+                            System.Numerics.Matrix4x4 offsetMat = bone.OffsetMatrix.ToSystemMatrixTransposed();
+                            System.Numerics.Matrix4x4.Decompose(offsetMat, out var scale, out var rot, out var trans);
+                            offsetMat = System.Numerics.Matrix4x4.CreateScale(scale)
+                                * System.Numerics.Matrix4x4.CreateFromQuaternion(rot)
+                                * System.Numerics.Matrix4x4.CreateTranslation(trans);
                         }
-
-                        boneIDsByName.Add(boneName, boneID);
-                        foreach (VertexWeight weight in bone.VertexWeights)
-                        {
-                            int relativeBoneIndex = GetAndIncrementRelativeBoneIndex(assignedBoneWeights, weight.VertexID);
-
-                            boneIndicies[relativeBoneIndex] = boneID;
-                            boneWeights[relativeBoneIndex] = weight.Weight;
-                        }
-
-                        System.Numerics.Matrix4x4 offsetMat = bone.OffsetMatrix.ToSystemMatrixTransposed();
-                        System.Numerics.Matrix4x4.Decompose(offsetMat, out var scale, out var rot, out var trans);
-                        offsetMat = System.Numerics.Matrix4x4.CreateScale(scale)
-                            * System.Numerics.Matrix4x4.CreateFromQuaternion(rot)
-                            * System.Numerics.Matrix4x4.CreateTranslation(trans);
                     }
-                }
-            */
+                */
                 List<ushort> indices = new List<ushort>();
                 foreach (Face face in mesh.Faces)
                 {
                     if (face.IndexCount == 3)
                     {
-                        indices.Add((ushort) face.Indices[0]);
+                        indices.Add((ushort)face.Indices[0]);
                         indices.Add((ushort)face.Indices[1]);
                         indices.Add((ushort)face.Indices[2]);
                     }
@@ -193,23 +191,22 @@ namespace Striked3D.Core.Assets
                 }
             }
 
-            
+
 
             return generatedMesh;
 
-         /*   return new ProcessedModel()
-            {
-                Surfaces = parts.ToArray(),
-                Animations = animations.ToArray(),
-                Nodes = nodes
-            };
-         */
+            /*   return new ProcessedModel()
+               {
+                   Surfaces = parts.ToArray(),
+                   Animations = animations.ToArray(),
+                   Nodes = nodes
+               };
+            */
         }
 
         private int GetAndIncrementRelativeBoneIndex(Dictionary<int, int> assignedBoneWeights, int vertexID)
         {
-            int currentCount = 0;
-            assignedBoneWeights.TryGetValue(vertexID, out currentCount);
+            assignedBoneWeights.TryGetValue(vertexID, out int currentCount);
             assignedBoneWeights[vertexID] = currentCount + 1;
             return currentCount;
         }
@@ -245,7 +242,7 @@ namespace Striked3D.Core.Assets
         {
             int currentIndex = processedNodes.Count;
             int[] childIndices = new int[node.ChildCount];
-            var nodeTransform = node.Transform.ToSystemMatrixTransposed();
+            System.Numerics.Matrix4x4 nodeTransform = node.Transform.ToSystemMatrixTransposed();
             ProcessedNode pn = new ProcessedNode(node.Name, nodeTransform, parentIndex, childIndices);
             processedNodes.Add(pn);
 

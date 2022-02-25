@@ -1,6 +1,6 @@
+using SharpFont;
 using System;
 using System.Collections.Generic;
-using SharpFont;
 namespace Msdfgen.IO
 {
     public static class ImportFont
@@ -49,10 +49,9 @@ namespace Msdfgen.IO
         }
         public static List<char> GetAllChars(Face font)
         {
-            var chars = new List<char>();
+            List<char> chars = new List<char>();
 
-            uint glyphIndex = 0;
-            uint currentChar = font.GetFirstChar(out glyphIndex);
+            uint currentChar = font.GetFirstChar(out uint glyphIndex);
             chars.Add((char)currentChar);
 
             while (true)
@@ -72,12 +71,12 @@ namespace Msdfgen.IO
         }
         public static Shape LoadGlyph(Face font, uint unicode, ref double advance)
         {
-            var result = new Shape();
+            Shape result = new Shape();
             font.LoadChar(unicode, LoadFlags.NoScale, LoadTarget.Normal);
             result.InverseYAxis = false;
             advance = font.Glyph.Advance.X.Value / 64.0;
-            var context = new FtContext(result);
-            var ftFunctions = new OutlineFuncs
+            FtContext context = new FtContext(result);
+            OutlineFuncs ftFunctions = new OutlineFuncs
             {
                 MoveFunction = context.FtMoveTo,
                 LineFunction = context.FtLineTo,
@@ -92,7 +91,7 @@ namespace Msdfgen.IO
 
         public static double GetKerning(Face font, uint unicode1, uint unicode2)
         {
-            var kerning = font.GetKerning(font.GetCharIndex(unicode1), font.GetCharIndex(unicode2),
+            FTVector26Dot6 kerning = font.GetKerning(font.GetCharIndex(unicode1), font.GetCharIndex(unicode2),
                 KerningMode.Unscaled);
             return kerning.X.Value / 64.0;
         }
@@ -130,14 +129,14 @@ namespace Msdfgen.IO
 
             internal int FtConicTo(ref FTVector control, ref FTVector to, IntPtr context)
             {
-                _contour.Add(new QuadraticSegment(EdgeColor.White,_position, FtPoint2(ref control), FtPoint2(ref to)));
+                _contour.Add(new QuadraticSegment(EdgeColor.White, _position, FtPoint2(ref control), FtPoint2(ref to)));
                 _position = FtPoint2(ref to);
                 return 0;
             }
 
             internal int FtCubicTo(ref FTVector control1, ref FTVector control2, ref FTVector to, IntPtr context)
             {
-                _contour.Add(new CubicSegment(EdgeColor.White, _position, FtPoint2(ref control1), FtPoint2(ref control2),FtPoint2(ref to)));
+                _contour.Add(new CubicSegment(EdgeColor.White, _position, FtPoint2(ref control1), FtPoint2(ref control2), FtPoint2(ref to)));
                 _position = FtPoint2(ref to);
                 return 0;
             }

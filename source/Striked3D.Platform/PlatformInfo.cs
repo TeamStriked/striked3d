@@ -14,8 +14,8 @@ namespace Striked3D.Platform
         {
             get
             {
-                var dir = System.IO.Path.Combine(ApplicationDir, "Assets");
-                if(!System.IO.Directory.Exists(dir))
+                string? dir = System.IO.Path.Combine(ApplicationDir, "Assets");
+                if (!System.IO.Directory.Exists(dir))
                 {
                     System.IO.Directory.CreateDirectory(dir);
                 }

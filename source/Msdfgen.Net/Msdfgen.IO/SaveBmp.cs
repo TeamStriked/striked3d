@@ -7,7 +7,7 @@ namespace Msdfgen
     {
         public static void SaveBmp(Bitmap<float> bitmap, string filename)
         {
-            using (var writer = new Writer(filename))
+            using (Writer writer = new Writer(filename))
             {
                 writer.WriteContent(bitmap);
             }
@@ -15,7 +15,7 @@ namespace Msdfgen
 
         public static void SaveBmp(Bitmap<FloatRgb> bitmap, string filename)
         {
-            using (var writer = new Writer(filename))
+            using (Writer writer = new Writer(filename))
             {
                 writer.WriteContent(bitmap);
             }
@@ -40,9 +40,9 @@ namespace Msdfgen
             private int WriteHeader(int width, int height)
             {
                 const uint bitmapStart = 54;
-                var paddedWidth = (3 * width + 3) & ~3;
-                var bitmapSize = (uint) (paddedWidth * height);
-                var fileSize = bitmapStart + bitmapSize;
+                int paddedWidth = (3 * width + 3) & ~3;
+                uint bitmapSize = (uint)(paddedWidth * height);
+                uint fileSize = bitmapStart + bitmapSize;
                 WriteHeaderSection1(fileSize, bitmapStart);
                 WriteHeaderSection2BeforeSize(width, height);
                 WriteHeaderSection2Rest(bitmapSize);
@@ -52,42 +52,42 @@ namespace Msdfgen
             private void WriteHeaderSection2Rest(uint bitmapSize)
             {
                 _writer.Write(bitmapSize);
-                _writer.Write((uint) 2835);
-                _writer.Write((uint) 2835);
-                _writer.Write((uint) 0);
-                _writer.Write((uint) 0);
+                _writer.Write((uint)2835);
+                _writer.Write((uint)2835);
+                _writer.Write((uint)0);
+                _writer.Write((uint)0);
             }
 
             private void WriteHeaderSection2BeforeSize(int width, int height)
             {
-                _writer.Write((uint) 40);
+                _writer.Write((uint)40);
                 _writer.Write(width);
                 _writer.Write(height);
-                _writer.Write((ushort) 1);
-                _writer.Write((ushort) 24);
-                _writer.Write((uint) 0);
+                _writer.Write((ushort)1);
+                _writer.Write((ushort)24);
+                _writer.Write((uint)0);
             }
 
             private void WriteHeaderSection1(uint fileSize, uint bitmapStart)
             {
-                _writer.Write((ushort) 0x4d42u);
+                _writer.Write((ushort)0x4d42u);
                 _writer.Write(fileSize);
-                _writer.Write((ushort) 0);
-                _writer.Write((ushort) 0);
+                _writer.Write((ushort)0);
+                _writer.Write((ushort)0);
                 _writer.Write(bitmapStart);
             }
 
             internal void WriteContent(Bitmap<float> bitmap)
             {
-                var paddedWidth = WriteHeader(bitmap.Width, bitmap.Height);
+                int paddedWidth = WriteHeader(bitmap.Width, bitmap.Height);
 
-                var padding = new byte[paddedWidth - 3 * bitmap.Width];
+                byte[] padding = new byte[paddedWidth - 3 * bitmap.Width];
 
-                for (var y = 0; y < bitmap.Height; ++y)
+                for (int y = 0; y < bitmap.Height; ++y)
                 {
-                    for (var x = 0; x < bitmap.Width; ++x)
+                    for (int x = 0; x < bitmap.Width; ++x)
                     {
-                        var px = (byte) MathExtension.Clamp(bitmap[x, y] * 0x100, 0, 0xff);
+                        byte px = (byte)MathExtension.Clamp(bitmap[x, y] * 0x100, 0, 0xff);
                         _writer.Write(px);
                         _writer.Write(px);
                         _writer.Write(px);
@@ -99,15 +99,15 @@ namespace Msdfgen
 
             internal void WriteContent(Bitmap<FloatRgb> bitmap)
             {
-                var paddedWidth = WriteHeader(bitmap.Width, bitmap.Height);
+                int paddedWidth = WriteHeader(bitmap.Width, bitmap.Height);
 
-                var padding = new byte[paddedWidth - 3 * bitmap.Width];
+                byte[] padding = new byte[paddedWidth - 3 * bitmap.Width];
 
-                for (var y = 0; y < bitmap.Height; ++y)
+                for (int y = 0; y < bitmap.Height; ++y)
                 {
-                    for (var x = 0; x < bitmap.Width; ++x)
+                    for (int x = 0; x < bitmap.Width; ++x)
                     {
-                        var bgr = new[]
+                        byte[] bgr = new[]
                         {
                             (byte) MathExtension.Clamp(bitmap[x, y].B * 0x100, 0, 0xff),
                             (byte) MathExtension.Clamp(bitmap[x, y].G * 0x100, 0, 0xff),

@@ -1,13 +1,9 @@
 ﻿using Striked3D.Core;
 using Striked3D.Core.Interfaces;
-using Striked3D.Core.Reference;
 using Striked3D.Core.Window;
-using Striked3D.Loader;
-using Striked3D.Resources;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace Striked3D
 {
@@ -19,32 +15,32 @@ namespace Striked3D
 
     public class ResourceLoader : IService
     {
-        private Dictionary<string, object> cache = new Dictionary<string, object>();
+        private readonly Dictionary<string, object> cache = new Dictionary<string, object>();
 
         public ResourceLoader()
         {
 
         }
 
-        public T Load<T>(string filepath) where T: ISerializable
+        public T Load<T>(string filepath) where T : ISerializable
         {
             if (cache.ContainsKey(filepath))
             {
-                return (T) cache[filepath];
+                return (T)cache[filepath];
             }
             try
             {
                 if (!File.Exists(filepath))
                 {
-                   return default(T);
+                    return default(T);
                 }
 
-                var bytes = File.ReadAllBytes(filepath);
+                byte[]? bytes = File.ReadAllBytes(filepath);
 
                 T newNode = Activator.CreateInstance<T>();
                 newNode.Deserialize(bytes);
 
-                this.cache.Add(filepath, newNode);
+                cache.Add(filepath, newNode);
                 return newNode;
             }
             catch (Exception ex)

@@ -1,11 +1,11 @@
 ﻿using Silk.NET.Input;
-using Striked3D.Types;
 using Silk.NET.Windowing;
 using Silk.NET.Windowing.Extensions.Veldrid;
 using Striked3D.Graphics;
 using Striked3D.Nodes;
 using Striked3D.Platform;
 using Striked3D.Services;
+using Striked3D.Types;
 using System;
 using System.Diagnostics;
 using WindowSilk = Silk.NET.Windowing.Window;
@@ -144,11 +144,11 @@ namespace Striked3D.Core.Window
 
             updateTime = watch.Elapsed.TotalMilliseconds;
 
-            var nodeService = this.Services.Get<ScreneTreeService>();
+            ScreneTreeService? nodeService = Services.Get<ScreneTreeService>();
 
             if (totalDelta > 1.0)
             {
-                var objects = nodeService.TotalChilds();
+                int objects = nodeService.TotalChilds();
                 string nt = frameTimer.CurrentAverageFramesPerSecond.ToString("000.0 fps / ") + frameTimer.CurrentAverageFrameTimeMilliseconds.ToString("#00.00 ms");
                 Console.WriteLine(nt + " - Update time: " + updateTime + " - Render time " + renderTime + " - objects: " + objects);
                 totalDelta = 0;

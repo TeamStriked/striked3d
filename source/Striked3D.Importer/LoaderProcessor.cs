@@ -1,10 +1,4 @@
-﻿using Striked3D.Core.Reference;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Striked3D.Loader
+﻿namespace Striked3D.Loader
 {
     public abstract class LoaderProcessor
     {
@@ -12,7 +6,11 @@ namespace Striked3D.Loader
     }
     public abstract class LoaderProcessor<T> : LoaderProcessor
     {
-        public override object Load(string filePath) => DoLoad(filePath);
+        public override object Load(string filePath)
+        {
+            return DoLoad(filePath);
+        }
+
         public abstract T DoLoad(string filePath);
     }
 }
