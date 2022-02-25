@@ -2,6 +2,7 @@
 using Striked3D.Resources;
 using Striked3D.Types;
 using Veldrid;
+using Striked3D.Graphics;
 
 namespace Striked3D.Nodes
 {
@@ -16,12 +17,12 @@ namespace Striked3D.Nodes
         {
             vertices = new Vertex[6];
 
-            vertices[0] = new Vertex { Position = new Striked3D.Types.Vector3D<float>(1, 1, 0) };
-            vertices[1] = new Vertex { Position = new Striked3D.Types.Vector3D<float>(-1, -1, 0) };
-            vertices[2] = new Vertex { Position = new Striked3D.Types.Vector3D<float>(-1, 1, 0) };
-            vertices[3] = new Vertex { Position = new Striked3D.Types.Vector3D<float>(-1, -1, 0) };
-            vertices[4] = new Vertex { Position = new Striked3D.Types.Vector3D<float>(1, 1, 0) };
-            vertices[5] = new Vertex { Position = new Striked3D.Types.Vector3D<float>(1, -1, 0) };
+            vertices[0] = new Vertex { Position = new Striked3D.Math.Vector3D<float>(1, 1, 0) };
+            vertices[1] = new Vertex { Position = new Striked3D.Math.Vector3D<float>(-1, -1, 0) };
+            vertices[2] = new Vertex { Position = new Striked3D.Math.Vector3D<float>(-1, 1, 0) };
+            vertices[3] = new Vertex { Position = new Striked3D.Math.Vector3D<float>(-1, -1, 0) };
+            vertices[4] = new Vertex { Position = new Striked3D.Math.Vector3D<float>(1, 1, 0) };
+            vertices[5] = new Vertex { Position = new Striked3D.Math.Vector3D<float>(1, -1, 0) };
 
             _isDirty = true;
         }

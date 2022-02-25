@@ -3,6 +3,7 @@ using Striked3D.Core;
 using Striked3D.Core.AssetsPrimitives;
 using Striked3D.Core.Window;
 using Striked3D.Graphics;
+using Striked3D.Math;
 using Striked3D.Resources;
 using Striked3D.Types;
 using Striked3D.Utils;
@@ -48,14 +49,14 @@ namespace Striked3D.Services
         public TextureView DefaultTextureView { get; set; }
         public Texture DefaultTexture { get; set; }
         public ResourceSet DefaultTextureSet { get; set; }
-        public DeviceBuffer indexDefaultBuffer { get; set; }
+        public DeviceBuffer IndexDefaultBuffer { get; set; }
         public DeviceBuffer mat2DFontInfoBuffer { get; set; }
         public ResourceSet mat2DFontInfoSet { get; set; }
 
         public void Register(IWindow window)
         {
 
-            maxPossibleThreads = Math.Max(1, Environment.ProcessorCount - 1);
+            maxPossibleThreads = System.Math.Max(1, Environment.ProcessorCount - 1);
 
             _graphicsDevice = window.CreateDevice();
             window.OnResize += Window_OnResize;
@@ -412,10 +413,10 @@ namespace Striked3D.Services
                 BufferUsage.IndexBuffer
             );
 
-            indexDefaultBuffer = _graphicsDevice.ResourceFactory.CreateBuffer(ibDescription);
+            IndexDefaultBuffer = _graphicsDevice.ResourceFactory.CreateBuffer(ibDescription);
 
             _commandList.Begin();
-            _commandList.UpdateBuffer(indexDefaultBuffer, 0, indicies.ToArray());
+            _commandList.UpdateBuffer(IndexDefaultBuffer, 0, indicies.ToArray());
             _commandList.End();
 
             _graphicsDevice.SubmitCommands(_commandList);

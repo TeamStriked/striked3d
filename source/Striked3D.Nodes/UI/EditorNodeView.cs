@@ -1,7 +1,7 @@
 ﻿using Striked3D.Core;
 using Striked3D.Resources;
 using Striked3D.Services;
-using Striked3D.Types;
+using Striked3D.Math;
 using Striked3D.Utils;
 using System;
 using System.Collections.Generic;

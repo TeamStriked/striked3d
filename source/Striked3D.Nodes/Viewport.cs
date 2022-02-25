@@ -2,6 +2,7 @@
 using Striked3D.Core.Graphics;
 using Striked3D.Core.Input;
 using Striked3D.Graphics;
+using Striked3D.Math;
 using Striked3D.Types;
 
 namespace Striked3D.Nodes
@@ -126,7 +127,7 @@ namespace Striked3D.Nodes
             {
                 if (ActiveCamera != null)
                 {
-                    ActiveCamera.UpdateTransform();
+                    ActiveCamera.UpdateCamera();
                 }
 
                 _isDirty = false;

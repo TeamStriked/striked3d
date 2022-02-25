@@ -1,4 +1,5 @@
 ﻿using Silk.NET.Input;
+using Striked3D.Math;
 using Striked3D.Types;
 
 namespace Striked3D.Core.Input

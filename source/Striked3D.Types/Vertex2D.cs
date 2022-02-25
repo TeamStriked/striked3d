@@ -1,4 +1,5 @@
-﻿using Striked3D.Types;
+﻿using Striked3D.Math;
+using Striked3D.Types;
 using System.Runtime.InteropServices;
 using Veldrid;
 

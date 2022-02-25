@@ -22,7 +22,7 @@ namespace Striked3D.Core.AssetsPrimitives
         public IndexFormat IndexFormat { get; set; }
         public uint IndexCount { get; set; }
         public Dictionary<string, uint> BoneIDsByName { get; set; }
-        public Striked3D.Types.Matrix4X4<float>[] BoneOffsets { get; set; }
+        public Striked3D.Math.Matrix4X4<float>[] BoneOffsets { get; set; }
 
         public ProcessedMeshPart(
             byte[] vertexData,
@@ -31,7 +31,7 @@ namespace Striked3D.Core.AssetsPrimitives
             IndexFormat indexFormat,
             uint indexCount,
             Dictionary<string, uint> boneIDsByName,
-            Striked3D.Types.Matrix4X4<float>[] boneOffsets)
+            Striked3D.Math.Matrix4X4<float>[] boneOffsets)
         {
             VertexData = vertexData;
             VertexElements = vertexElements;

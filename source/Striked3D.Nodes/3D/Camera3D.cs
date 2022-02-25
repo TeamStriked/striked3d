@@ -1,11 +1,11 @@
-﻿using Striked3D.Core;
+﻿using Striked3D.Math;
+using Striked3D.Core;
 using Striked3D.Core.Input;
 using Striked3D.Types;
 using System;
 
 namespace Striked3D.Nodes
 {
-
     public class Camera3D : Node3D, ICamera, IInputable
     {
         private float _fov = 45f;
@@ -26,14 +26,14 @@ namespace Striked3D.Nodes
         private float _yaw;
         private float _pitch;
 
-        public Vector3D<float> Position { get => _position; set { _position = value; UpdateTransform(); } }
+        public Vector3D<float> Position { get => _position; set { _position = value; UpdateCamera(); } }
 
-        public float FarDistance { get => _far; set { _far = value; UpdateTransform(); } }
-        public float FieldOfView { get => _fov; set { _fov = value; UpdateTransform(); } }
-        public float NearDistance { get => _near; set { _near = value; UpdateTransform(); } }
+        public float FarDistance { get => _far; set { _far = value; UpdateCamera(); } }
+        public float FieldOfView { get => _fov; set { _fov = value; UpdateCamera(); } }
+        public float NearDistance { get => _near; set { _near = value; UpdateCamera(); } }
 
-        public float Yaw { get => _yaw; set { _yaw = value; UpdateTransform(); } }
-        public float Pitch { get => _pitch; set { _pitch = value; UpdateTransform(); } }
+        public float Yaw { get => _yaw; set { _yaw = value; UpdateCamera(); } }
+        public float Pitch { get => _pitch; set { _pitch = value; UpdateCamera(); } }
         public float MoveSpeed { get => _moveSpeed; set => _moveSpeed = value; }
 
         private InputService service;
@@ -42,13 +42,13 @@ namespace Striked3D.Nodes
         public override void OnEnterTree()
         {
             base.OnEnterTree();
-            UpdateTransform();
+            UpdateCamera();
             service = Root.Services.Get<InputService>();
         }
 
         private float DegreesToRadians(float degrees)
         {
-            return degrees * (float)Math.PI / 180f;
+            return degrees * (float)System.Math.PI / 180f;
         }
 
         public override void Update(double delta)
@@ -93,7 +93,7 @@ namespace Striked3D.Nodes
                 motionDir = Vector3D.Transform<float>(motionDir, lookRotation);
                 _position += motionDir * MoveSpeed * sprintFactor * (float)delta;
 
-                UpdateTransform();
+                UpdateCamera();
             }
 
             if (Viewport.IsMouseInside() && service.IseMouseButtonPressed(Silk.NET.Input.MouseButton.Right) && !activated)
@@ -114,7 +114,7 @@ namespace Striked3D.Nodes
                 Pitch += -mouseDelta.Y * _mouseSpeed;
                 Pitch = Clamp(Pitch, -1.55f, 1.55f);
 
-                UpdateTransform();
+                UpdateCamera();
             }
             else if (activated)
             {
@@ -127,7 +127,7 @@ namespace Striked3D.Nodes
         private Vector2D<float> mousePositionBeforeActivate;
         private bool activated = false;
 
-        public void UpdateTransform()
+        public void UpdateCamera()
         {
             Quaternion<float> lookRotation = Quaternion<float>.CreateFromYawPitchRoll(Yaw, Pitch, 0f);
             Vector3D<float> lookDir = Vector3D.Transform(-Vector3D<float>.UnitZ, lookRotation);

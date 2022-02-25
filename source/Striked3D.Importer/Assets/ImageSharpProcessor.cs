@@ -60,8 +60,8 @@ namespace Striked3D.Core.Assets
             int currentHeight = baseImage.Height;
             while (currentWidth != 1 || currentHeight != 1)
             {
-                int newWidth = Math.Max(1, currentWidth / 2);
-                int newHeight = Math.Max(1, currentHeight / 2);
+                int newWidth = System.Math.Max(1, currentWidth / 2);
+                int newHeight = System.Math.Max(1, currentHeight / 2);
                 Image<T> newImage = baseImage.Clone(context => context.Resize(newWidth, newHeight, KnownResamplers.Lanczos3));
                 Debug.Assert(i < mipLevelCount);
                 mipLevels[i] = newImage;
@@ -79,7 +79,7 @@ namespace Striked3D.Core.Assets
 
         public static int ComputeMipLevels(int width, int height)
         {
-            return 1 + (int)Math.Floor(Math.Log(Math.Max(width, height), 2));
+            return 1 + (int)System.Math.Floor(System.Math.Log(System.Math.Max(width, height), 2));
         }
     }
 }

@@ -183,12 +183,12 @@ namespace Striked3D.Nodes
 
         public override void DrawCanvas()
         {
-            Striked3D.Types.Vector2D<float> pos = ScreenPosition;
+            Striked3D.Math.Vector2D<float> pos = ScreenPosition;
 
             pos.Y += Padding.Y;
             pos.X += Padding.X;
 
-            Types.Vector2D<float> newScreenSize = _screenSize;
+            Math.Vector2D<float> newScreenSize = _screenSize;
             newScreenSize.Y = FontSize + Padding.Y + Padding.W;
 
             RgbaFloat bgColor = isHover ? BackgroundHover : Background;
@@ -208,8 +208,8 @@ namespace Striked3D.Nodes
 
             if (foregroundColor.A != 0 && isFocused)
             {
-                Types.Vector2D<float> posBLinkerStart = pos;
-                Types.Vector2D<float> posBlinkerEnd = pos;
+                Math.Vector2D<float> posBLinkerStart = pos;
+                Math.Vector2D<float> posBlinkerEnd = pos;
 
                 posBlinkerEnd.Y += FontSize + Padding.Y / 2;
 

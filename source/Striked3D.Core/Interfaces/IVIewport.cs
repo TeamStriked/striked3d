@@ -1,4 +1,6 @@
-﻿using Striked3D.Types;
+﻿using Striked3D.Graphics;
+using Striked3D.Math;
+using Striked3D.Types;
 
 namespace Striked3D.Core
 {

@@ -1,4 +1,6 @@
 ﻿using Veldrid;
+using Striked3D.Graphics;
+using Striked3D.Types;
 
 namespace Striked3D.Core.Graphics
 {

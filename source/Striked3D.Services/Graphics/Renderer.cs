@@ -32,7 +32,7 @@ namespace Striked3D.Graphics
             this.delta = delta;
         }
 
-        public DeviceBuffer indexDefaultBuffer => service.indexDefaultBuffer;
+        public DeviceBuffer IndexDefaultBuffer => service.IndexDefaultBuffer;
         public ResourceLayout Material3DLayout => service.Material3DLayout;
         public ResourceLayout Material2DLayout => service.Material2DLayout;
         public ResourceLayout TransformLayout => service.TransformLayout;

@@ -11,6 +11,7 @@
     <ProjectReference Include="..\..\thirtparty\veldrid\Veldrid\Veldrid.csproj" />
     <ProjectReference Include="..\Silk.NET.Window.Extension\Silk.NET.Windowing.Extensions.Veldrid.csproj" />
     <ProjectReference Include="..\Striked3D.Core\Striked3D.Core.csproj" />
+    <ProjectReference Include="..\Striked3D.Math\Striked3D.Math.csproj" />
     <ProjectReference Include="..\Striked3D.Platform\Striked3D.Platform.csproj" />
     <ProjectReference Include="..\Striked3D.Types\Striked3D.Types.csproj" />
     <ProjectReference Include="..\Striked3D.Utils\Striked3D.Utils.csproj" />

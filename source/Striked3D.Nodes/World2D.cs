@@ -1,6 +1,8 @@
 ﻿using Striked3D.Resources;
 using Striked3D.Types;
 using Veldrid;
+using Striked3D.Graphics;
+using Striked3D.Math;
 
 namespace Striked3D.Core.Graphics
 {

@@ -1,4 +1,6 @@
-﻿using Striked3D.Types;
+﻿using Silk.NET.Maths;
+using Striked3D.Graphics;
+using Striked3D.Types;
 using Veldrid;
 
 namespace Striked3D.Core.Graphics

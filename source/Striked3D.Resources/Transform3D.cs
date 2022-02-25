@@ -1,4 +1,5 @@
-﻿using Striked3D.Core;
+﻿using Striked3D.Math;
+using Striked3D.Core;
 using Striked3D.Graphics;
 using Striked3D.Types;
 using System;
@@ -12,7 +13,7 @@ namespace Striked3D.Resources
         private Vector3D<float> _position = new(0, 0f, 0);
         private Quaternion<float> _rotation = new(0f, 0f, 0f, 1f);
         private Vector3D<float> _scale = new(0.1f, 0.1f, 0.1f);
-        private Striked3D.Types.Matrix4X4<float> ModelMatrix { get; set; }
+        private Matrix4X4<float> ModelMatrix { get; set; }
         private bool isInitialized = false;
         private bool isDirty = true;
         private DeviceBuffer modalBuffer;
@@ -91,7 +92,7 @@ namespace Striked3D.Resources
 
         public static float DegreesToRadians(float degrees)
         {
-            return degrees * (float)Math.PI / 180f;
+            return degrees * (float)System.Math.PI / 180f;
         }
 
         public override void Dispose()

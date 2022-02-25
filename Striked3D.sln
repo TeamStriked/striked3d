@@ -35,6 +35,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Striked3D.Engine", "source\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Striked3D.Utils", "source\Striked3D.Utils\Striked3D.Utils.csproj", "{9BB58395-EF7E-44FD-AC52-CD8BBA63F001}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Striked3D.Math", "source\Striked3D.Math\Striked3D.Math.csproj", "{07BCDF38-2B5F-4B5D-9A4E-1870A969EE58}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		debug|Any CPU = debug|Any CPU
@@ -105,6 +107,10 @@ Global
 		{9BB58395-EF7E-44FD-AC52-CD8BBA63F001}.debug|Any CPU.Build.0 = Debug|Any CPU
 		{9BB58395-EF7E-44FD-AC52-CD8BBA63F001}.release|Any CPU.ActiveCfg = release|Any CPU
 		{9BB58395-EF7E-44FD-AC52-CD8BBA63F001}.release|Any CPU.Build.0 = release|Any CPU
+		{07BCDF38-2B5F-4B5D-9A4E-1870A969EE58}.debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{07BCDF38-2B5F-4B5D-9A4E-1870A969EE58}.debug|Any CPU.Build.0 = Debug|Any CPU
+		{07BCDF38-2B5F-4B5D-9A4E-1870A969EE58}.release|Any CPU.ActiveCfg = release|Any CPU
+		{07BCDF38-2B5F-4B5D-9A4E-1870A969EE58}.release|Any CPU.Build.0 = release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

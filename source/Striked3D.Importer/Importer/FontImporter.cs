@@ -1,5 +1,6 @@
 ﻿using Msdfgen;
 using Msdfgen.IO;
+using Striked3D.Math;
 using Striked3D.Resources;
 using Striked3D.Types;
 using Striked3D.Utils;
@@ -84,11 +85,11 @@ namespace Striked3D.Importer
 
             int maxPossibleItems = (maxBitmapSize * maxBitmapSize) / (renderSize * renderSize);
 
-            int maxPossibleColumns = (int)Math.Ceiling((float)maxBitmapSize / renderSize);
+            int maxPossibleColumns = (int)System.Math.Ceiling((float)maxBitmapSize / renderSize);
             int maxPossibleRows = maxPossibleColumns;
 
             int requiredColumns = (chars.Count() > maxPossibleColumns) ? maxPossibleColumns : chars.Count();
-            int requiredRows = (int)Math.Ceiling((chars.Count() / (float)maxPossibleItems) * maxPossibleRows);
+            int requiredRows = (int)System.Math.Ceiling((chars.Count() / (float)maxPossibleItems) * maxPossibleRows);
 
             int width = requiredColumns * renderSize;
             int height = requiredRows * renderSize;

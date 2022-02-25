@@ -91,7 +91,7 @@ namespace Striked3D.Core.AssetsPrimitives
                 ret /= 2;
             }
 
-            return Math.Max(1, ret);
+            return System.Math.Max(1, ret);
         }
     }
 

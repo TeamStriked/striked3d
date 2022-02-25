@@ -1,6 +1,7 @@
 ﻿using BinaryPack.Attributes;
 using BinaryPack.Enums;
 using Msdfgen;
+using Striked3D.Math;
 using Striked3D.Types;
 using System;
 using System.Collections.Generic;

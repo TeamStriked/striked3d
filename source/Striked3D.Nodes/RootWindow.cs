@@ -3,6 +3,7 @@ using Silk.NET.Windowing;
 using Silk.NET.Windowing.Extensions.Veldrid;
 using Striked3D.Graphics;
 using Striked3D.Nodes;
+using Striked3D.Math;
 using Striked3D.Platform;
 using Striked3D.Services;
 using Striked3D.Types;

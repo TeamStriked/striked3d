@@ -1,5 +1,6 @@
 ﻿using Silk.NET.Input;
 using Silk.NET.Windowing;
+using Striked3D.Math;
 using Striked3D.Types;
 
 namespace Striked3D.Core.Window

@@ -1,5 +1,6 @@
 ﻿using Assimp;
 using Striked3D.Core.AssetsPrimitives;
+using Striked3D.Math;
 using Striked3D.Types;
 using System.Collections.Generic;
 using System.IO;

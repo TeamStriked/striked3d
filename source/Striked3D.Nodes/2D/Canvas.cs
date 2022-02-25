@@ -1,4 +1,5 @@
-﻿using Striked3D.Core;
+﻿using Striked3D.Math;
+using Striked3D.Core;
 using Striked3D.Engine.Resources;
 using Striked3D.Graphics;
 using Striked3D.Importer;
@@ -18,6 +19,9 @@ namespace Striked3D.Nodes
         public int atlasId = -1;
     }
 
+    /// <summary>
+    /// A 2D Canvas Element
+    /// </summary>
     public abstract class Canvas : Node2D, IDrawable2D
     {
         private readonly List<CanvasItem> matInfoArray = new List<CanvasItem>();
@@ -25,6 +29,11 @@ namespace Striked3D.Nodes
         public Material2D Material { get; set; }
 
         private bool _isVisible = true;
+
+        /// <summary>
+        /// The visibility of the canvas item (Disable rendering)
+        /// </summary>
+        /// <value>Get or set the visibility</value>
         public bool IsVisible { get => _isVisible; set => _isVisible = value; }
 
         private bool needsToBeRecreate = false;
@@ -179,7 +188,7 @@ namespace Striked3D.Nodes
                             renderer.DefaultTextureSet
                     });
 
-                    renderer.BindBuffers(null, renderer.indexDefaultBuffer);
+                    renderer.BindBuffers(null, renderer.IndexDefaultBuffer);
 
                     foreach (CanvasItem item in matInfoArray)
                     {
