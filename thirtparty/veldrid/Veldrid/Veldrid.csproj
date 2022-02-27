@@ -27,6 +27,7 @@
     <PackageReference Include="Silk.NET.Vulkan.Extensions.EXT" Version="2.13.0" />
     <PackageReference Include="Silk.NET.Vulkan.Extensions.KHR" Version="2.13.0" />
     <PackageReference Include="Silk.NET.Vulkan.Extensions.MVK" Version="2.13.0" />
+    <PackageReference Include="Silk.NET.Windowing" Version="2.13.0" />
 
     <PackageReference Include="Vortice.D3DCompiler" Version="2.1.0" Condition="'$(ExcludeD3D11)' != 'true' and '$(ExcludeD3D12)' != 'true'" />
     <PackageReference Include="Vortice.Direct3D11" Version="2.1.0" Condition="'$(ExcludeD3D11)' != 'true'" />

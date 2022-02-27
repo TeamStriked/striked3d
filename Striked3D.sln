@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veldrid.MetalBindings", "th
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veldrid.SPIRV", "thirtparty\veldrid-spirv\src\Veldrid.SPIRV\Veldrid.SPIRV.csproj", "{6964BF1C-BAFE-44B6-B12C-1B47528BA091}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Silk.NET.Windowing.Extensions.Veldrid", "source\Silk.NET.Window.Extension\Silk.NET.Windowing.Extensions.Veldrid.csproj", "{2B5CADD5-1989-446B-B676-A91A468E3D60}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Striked3D.Core", "source\Striked3D.Core\Striked3D.Core.csproj", "{E24A39D4-1016-4178-A035-0F4A7901305B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Striked3D.Nodes", "source\Striked3D.Nodes\Striked3D.Nodes.csproj", "{4FF771DE-FB71-4116-BBE3-1EA45F08837D}"
@@ -57,10 +55,6 @@ Global
 		{6964BF1C-BAFE-44B6-B12C-1B47528BA091}.debug|Any CPU.Build.0 = Debug|Any CPU
 		{6964BF1C-BAFE-44B6-B12C-1B47528BA091}.release|Any CPU.ActiveCfg = Release|Any CPU
 		{6964BF1C-BAFE-44B6-B12C-1B47528BA091}.release|Any CPU.Build.0 = Release|Any CPU
-		{2B5CADD5-1989-446B-B676-A91A468E3D60}.debug|Any CPU.ActiveCfg = Release|Any CPU
-		{2B5CADD5-1989-446B-B676-A91A468E3D60}.debug|Any CPU.Build.0 = Release|Any CPU
-		{2B5CADD5-1989-446B-B676-A91A468E3D60}.release|Any CPU.ActiveCfg = Release|Any CPU
-		{2B5CADD5-1989-446B-B676-A91A468E3D60}.release|Any CPU.Build.0 = Release|Any CPU
 		{E24A39D4-1016-4178-A035-0F4A7901305B}.debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E24A39D4-1016-4178-A035-0F4A7901305B}.debug|Any CPU.Build.0 = Debug|Any CPU
 		{E24A39D4-1016-4178-A035-0F4A7901305B}.release|Any CPU.ActiveCfg = Release|Any CPU

@@ -9,7 +9,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\thirtparty\veldrid-spirv\src\Veldrid.SPIRV\Veldrid.SPIRV.csproj" />
     <ProjectReference Include="..\..\thirtparty\veldrid\Veldrid\Veldrid.csproj" />
-    <ProjectReference Include="..\Silk.NET.Window.Extension\Silk.NET.Windowing.Extensions.Veldrid.csproj" />
     <ProjectReference Include="..\Striked3D.Core\Striked3D.Core.csproj" />
     <ProjectReference Include="..\Striked3D.Math\Striked3D.Math.csproj" />
     <ProjectReference Include="..\Striked3D.Platform\Striked3D.Platform.csproj" />
