@@ -3,10 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31919.166
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Msdfgen", "source\Msdfgen.Net\Msdfgen\Msdfgen.csproj", "{11C61530-5B17-4F3D-83EC-2080E2B6470B}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Msdfgen.IO", "source\Msdfgen.Net\Msdfgen.IO\Msdfgen.IO.csproj", "{D144A343-F6D5-496D-9FE6-C50E3021B21C}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veldrid", "thirtparty\veldrid\Veldrid\Veldrid.csproj", "{9A0613F2-6370-46D4-B54B-53F2297DA0D4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veldrid.OpenGLBindings", "thirtparty\veldrid\Veldrid.OpenGLBindings\Veldrid.OpenGLBindings.csproj", "{27075EC9-A3FC-4CA2-AFB0-9FB4C22C7A5C}"
@@ -37,20 +33,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Striked3D.Utils", "source\S
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Striked3D.Math", "source\Striked3D.Math\Striked3D.Math.csproj", "{07BCDF38-2B5F-4B5D-9A4E-1870A969EE58}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Msdfgen", "source\Msdfgen\Msdfgen.csproj", "{D8304B32-BD73-4618-AAA6-8802CCCC6F22}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		debug|Any CPU = debug|Any CPU
 		release|Any CPU = release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{11C61530-5B17-4F3D-83EC-2080E2B6470B}.debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{11C61530-5B17-4F3D-83EC-2080E2B6470B}.debug|Any CPU.Build.0 = Debug|Any CPU
-		{11C61530-5B17-4F3D-83EC-2080E2B6470B}.release|Any CPU.ActiveCfg = Release|Any CPU
-		{11C61530-5B17-4F3D-83EC-2080E2B6470B}.release|Any CPU.Build.0 = Release|Any CPU
-		{D144A343-F6D5-496D-9FE6-C50E3021B21C}.debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D144A343-F6D5-496D-9FE6-C50E3021B21C}.debug|Any CPU.Build.0 = Debug|Any CPU
-		{D144A343-F6D5-496D-9FE6-C50E3021B21C}.release|Any CPU.ActiveCfg = Release|Any CPU
-		{D144A343-F6D5-496D-9FE6-C50E3021B21C}.release|Any CPU.Build.0 = Release|Any CPU
 		{9A0613F2-6370-46D4-B54B-53F2297DA0D4}.debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9A0613F2-6370-46D4-B54B-53F2297DA0D4}.debug|Any CPU.Build.0 = Debug|Any CPU
 		{9A0613F2-6370-46D4-B54B-53F2297DA0D4}.release|Any CPU.ActiveCfg = Release|Any CPU
@@ -111,6 +101,10 @@ Global
 		{07BCDF38-2B5F-4B5D-9A4E-1870A969EE58}.debug|Any CPU.Build.0 = Debug|Any CPU
 		{07BCDF38-2B5F-4B5D-9A4E-1870A969EE58}.release|Any CPU.ActiveCfg = release|Any CPU
 		{07BCDF38-2B5F-4B5D-9A4E-1870A969EE58}.release|Any CPU.Build.0 = release|Any CPU
+		{D8304B32-BD73-4618-AAA6-8802CCCC6F22}.debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8304B32-BD73-4618-AAA6-8802CCCC6F22}.debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8304B32-BD73-4618-AAA6-8802CCCC6F22}.release|Any CPU.ActiveCfg = release|Any CPU
+		{D8304B32-BD73-4618-AAA6-8802CCCC6F22}.release|Any CPU.Build.0 = release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

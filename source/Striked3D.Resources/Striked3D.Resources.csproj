@@ -9,8 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\thirtparty\veldrid-spirv\src\Veldrid.SPIRV\Veldrid.SPIRV.csproj" />
     <ProjectReference Include="..\..\thirtparty\veldrid\Veldrid\Veldrid.csproj" />
-    <ProjectReference Include="..\Msdfgen.Net\Msdfgen.IO\Msdfgen.IO.csproj" />
-    <ProjectReference Include="..\Msdfgen.Net\Msdfgen\Msdfgen.csproj" />
+    <ProjectReference Include="..\Msdfgen\Msdfgen.csproj" />
     <ProjectReference Include="..\Striked3D.Services\Striked3D.Services.csproj" />
     <ProjectReference Include="..\Striked3D.Types\Striked3D.Types.csproj" />
   </ItemGroup>

@@ -18,6 +18,7 @@ namespace Striked3D.Services
 {
     public class GraphicService : IService
     {
+
         private GraphicsDevice _graphicsDevice;
         private CommandList _commandList;
         private CommandList[] threadsCommands;
@@ -25,17 +26,9 @@ namespace Striked3D.Services
         private CommandList[] preRenderCommands;
 
         public FrameTimeAverager frameTimer = new(0.3);
-
-        private ScreneTreeService treeService;
-        private ServiceRegistry _registry;
-
         public GraphicsDevice Renderer3D => _graphicsDevice;
 
         public TextureSampleCount SampleCount = TextureSampleCount.Count1;
-
-        public int maxRecordPerThread = 512;
-
-        public int maxPossibleThreads = 6;
 
 
         public ResourceLayout Material3DLayout { get; set; }
@@ -53,6 +46,11 @@ namespace Striked3D.Services
         public DeviceBuffer IndexDefaultBuffer { get; set; }
         public DeviceBuffer mat2DFontInfoBuffer { get; set; }
         public ResourceSet mat2DFontInfoSet { get; set; }
+
+        private ScreneTreeService treeService;
+        private ServiceRegistry _registry;
+        private const int maxRecordPerThread = 512;
+        private int maxPossibleThreads = 6;
 
         public void Register(IWindow window)
         {
@@ -80,37 +78,6 @@ namespace Striked3D.Services
             _graphicsDevice.ResizeMainWindow((uint)size.X, (uint)size.Y);
         }
 
-        public ulong GetImageHandle(Texture texture)
-        {
-            BackendInfoVulkan info = _graphicsDevice.GetVulkanInfo();
-            ulong imageInfo = info.GetVkImage(texture);
-
-            return imageInfo;
-        }
-
-        public unsafe IntPtr GetProc(string name, IntPtr instanceHandle, IntPtr deviceHandle)
-        {
-            Vk api = Vk.GetApi();
-            if (deviceHandle != IntPtr.Zero)
-            {
-                Device device = new Device
-                {
-                    Handle = deviceHandle
-                };
-                Silk.NET.Core.PfnVoidFunction res = api.GetDeviceProcAddr(device, name);
-                return res;
-            }
-
-            Instance instance = new Instance
-            {
-                Handle = instanceHandle
-            };
-
-            Silk.NET.Core.PfnVoidFunction res2 = api.GetInstanceProcAddr(instance, name);
-
-            return res2;
-        }
-
         public void Render(double delta)
         {
             frameTimer.AddTime(delta);
@@ -120,7 +87,7 @@ namespace Striked3D.Services
                 treeService = _registry.Get<ScreneTreeService>();
             }
 
-            treeService.QueueFreeAll();
+            treeService?.QueueFreeAll();
 
 
             RenderThreads(treeService.GetAll<IDrawable>(), delta);
@@ -129,7 +96,6 @@ namespace Striked3D.Services
 
         private void RenderThreads(List<IDrawable> drawables, double delta)
         {
-
             bool requiredWait = false;
             IEnumerable<IDrawable>? visibles = drawables.Where(df => df.IsVisible);
 
@@ -157,18 +123,6 @@ namespace Striked3D.Services
                         requiredWait = true;
                     }
                 }
-
-                /*
-                foreach (Task<CommandList> task in renderThreadsTask3D)
-                {
-                    _graphicsDevice.SubmitCommands(task.Result);
-                }
-
-                foreach (Task<CommandList> task in renderThreadsTask2D)
-                {
-                    _graphicsDevice.SubmitCommands(task.Result);
-                }
-                */
             }
 
             _commandList.PushDebugGroup("Default Renderer - " + Thread.CurrentThread.ManagedThreadId);
@@ -208,18 +162,6 @@ namespace Striked3D.Services
 
                 Task.WaitAll(renderThreadsTask3D);
                 Task.WaitAll(renderThreadsTask2D);
-
-                /*
-                foreach (Task<CommandList> task in renderThreadsTask3D)
-                {
-                    _graphicsDevice.SubmitCommands(task.Result);
-                }
-
-                foreach (Task<CommandList> task in renderThreadsTask2D)
-                {
-                    _graphicsDevice.SubmitCommands(task.Result);
-                }
-                */
             }
 
             _commandList.EndWithSubpasses(renderCommandList.ToArray());
@@ -315,8 +257,6 @@ namespace Striked3D.Services
                 clist.PushDebugGroup("Resources - " + Thread.CurrentThread.ManagedThreadId);
                 clist.Begin();
 
-                //        clist.SetFramebuffer(_graphicsDevice.MainSwapchain.Framebuffer);
-
                 foreach (IDrawable child in drawables)
                 {
                     try
@@ -410,7 +350,6 @@ namespace Striked3D.Services
 
             ResourceSetDescription resourceSetDescription = new(FontAtlasLayout, DefaultTextureView, _graphicsDevice.LinearSampler);
             DefaultTextureSet = _graphicsDevice.ResourceFactory.CreateResourceSet(resourceSetDescription);
-
 
             ushort[] indicies = new ushort[6] { 0, 1, 2, 2, 0, 3 };
             BufferDescription ibDescription = new BufferDescription

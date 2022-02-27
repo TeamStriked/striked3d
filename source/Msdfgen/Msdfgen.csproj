@@ -2,12 +2,11 @@
 
     <PropertyGroup>
         <OutputType>Library</OutputType>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
-        <LangVersion>7.3</LangVersion>
         <ApplicationIcon />
         <StartupObject />
     </PropertyGroup>
 
+    <Import Project="..\common.props" />
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -22,7 +21,12 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\Striked3D.Types\Striked3D.Types.csproj" />
+      <PackageReference Include="SharpFontStandard" Version="4.0.1" />
     </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Striked3D.Types\Striked3D.Types.csproj" />
+    </ItemGroup>
+
 
 </Project>
