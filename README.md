@@ -26,9 +26,9 @@ We particularly rely on OOP.
 
 ## Libraries in use
 
-* Silk.NET.Math (Fully integrated and modified)
-* Veldrid (Most parts changed, not ready yet.)
-* Freetype (For font-rendering)
-* AssimpNet (For 3d model parsing)
-* BinaryPack and Json.NET (For serialization)
-* ImageSharp (For image import)
+* [Silk.NET.Math](https://github.com/dotnet/Silk.NET/tree/main/src/Maths) (Fully integrated and modified)
+* [Veldrid](https://github.com/mellinoe/veldrid)  (Most parts changed, not ready yet.)
+* [Freetype] (https://github.com/freetype) (For font-rendering)
+* [AssimpNet] (https://bitbucket.org/Starnick/assimpnet/src/master/) (For 3d model parsing)
+* [BinaryPack] (https://github.com/Sergio0694/BinaryPack) and [Json.NET] (https://github.com/JamesNK/Newtonsoft.Json) (For serialization)
+* [ImageSharp] (https://github.com/SixLabors/ImageSharp) (For image import)
