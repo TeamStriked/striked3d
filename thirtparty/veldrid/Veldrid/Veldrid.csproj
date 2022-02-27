@@ -10,7 +10,6 @@
     <DefineConstants Condition="'$(ExcludeD3D12)' == 'true'">$(DefineConstants);EXCLUDE_D3D12_BACKEND</DefineConstants>
     <DefineConstants Condition="'$(ExcludeVulkan)' == 'true'">$(DefineConstants);EXCLUDE_VULKAN_BACKEND</DefineConstants>
     <DefineConstants Condition="'$(ExcludeMetal)' == 'true'">$(DefineConstants);EXCLUDE_METAL_BACKEND</DefineConstants>
-    <DefineConstants Condition="'$(ExcludeOpenGL)' == 'true'">$(DefineConstants);EXCLUDE_OPENGL_BACKEND</DefineConstants>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
@@ -61,7 +60,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Veldrid.MetalBindings\Veldrid.MetalBindings.csproj" />
-    <ProjectReference Include="..\Veldrid.OpenGLBindings\Veldrid.OpenGLBindings.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

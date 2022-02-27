@@ -18,16 +18,8 @@
         /// </summary>
         Vulkan,
         /// <summary>
-        /// OpenGL.
-        /// </summary>
-        OpenGL,
-        /// <summary>
         /// Metal.
         /// </summary>
         Metal,
-        /// <summary>
-        /// OpenGL ES.
-        /// </summary>
-        OpenGLES,
     }
 }

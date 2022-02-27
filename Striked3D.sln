@@ -5,8 +5,6 @@ VisualStudioVersion = 17.0.31919.166
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veldrid", "thirtparty\veldrid\Veldrid\Veldrid.csproj", "{9A0613F2-6370-46D4-B54B-53F2297DA0D4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veldrid.OpenGLBindings", "thirtparty\veldrid\Veldrid.OpenGLBindings\Veldrid.OpenGLBindings.csproj", "{27075EC9-A3FC-4CA2-AFB0-9FB4C22C7A5C}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veldrid.MetalBindings", "thirtparty\veldrid\Veldrid.MetalBindings\Veldrid.MetalBindings.csproj", "{0FE1F613-9FE5-4DB6-9B0E-5967389222F5}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Veldrid.SPIRV", "thirtparty\veldrid-spirv\src\Veldrid.SPIRV\Veldrid.SPIRV.csproj", "{6964BF1C-BAFE-44B6-B12C-1B47528BA091}"
@@ -43,10 +41,6 @@ Global
 		{9A0613F2-6370-46D4-B54B-53F2297DA0D4}.debug|Any CPU.Build.0 = Debug|Any CPU
 		{9A0613F2-6370-46D4-B54B-53F2297DA0D4}.release|Any CPU.ActiveCfg = Release|Any CPU
 		{9A0613F2-6370-46D4-B54B-53F2297DA0D4}.release|Any CPU.Build.0 = Release|Any CPU
-		{27075EC9-A3FC-4CA2-AFB0-9FB4C22C7A5C}.debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{27075EC9-A3FC-4CA2-AFB0-9FB4C22C7A5C}.debug|Any CPU.Build.0 = Debug|Any CPU
-		{27075EC9-A3FC-4CA2-AFB0-9FB4C22C7A5C}.release|Any CPU.ActiveCfg = Release|Any CPU
-		{27075EC9-A3FC-4CA2-AFB0-9FB4C22C7A5C}.release|Any CPU.Build.0 = Release|Any CPU
 		{0FE1F613-9FE5-4DB6-9B0E-5967389222F5}.debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0FE1F613-9FE5-4DB6-9B0E-5967389222F5}.debug|Any CPU.Build.0 = Debug|Any CPU
 		{0FE1F613-9FE5-4DB6-9B0E-5967389222F5}.release|Any CPU.ActiveCfg = Release|Any CPU
