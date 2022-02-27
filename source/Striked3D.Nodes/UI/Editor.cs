@@ -1,14 +1,28 @@
 ﻿using Striked3D.Helpers;
+using Striked3D.Math;
+using Striked3D.Nodes.UI;
+using Striked3D.Resources;
 
 namespace Striked3D.Nodes
 {
+    public struct EditorTheme
+    {
+        public Font Font { get; set; }
+        public BitmapTexture FolderIcon { get; set; }
+        public int IconSize = 16;
+        public Vector4D<float> IconModulator = new Vector4D<float>(0,1,0,1);
+    }
+
     public class Editor : Node
     {
+        public static EditorTheme Theme = new EditorTheme();
+
         private LayoutGrid verticalGrid;
         private LayoutGrid headerGrid;
         private LayoutGrid footerGrid;
         private LayoutGrid contentGrid;
         private LayoutGrid contentLeftGrid;
+        private LayoutGrid contentLeftGrid2;
         private LayoutGrid contentCenterGrid;
         private LayoutGrid contentRightGrid;
 
@@ -50,8 +64,16 @@ namespace Striked3D.Nodes
                 editor = this,
                 nodeView = nodeView
             };
+       
+            EditorFileWatch fileWatch = new EditorFileWatch
+            {
+                Size = new Types.StringVector("100%", "100%"),
+                Position = new Types.StringVector("0px", "0px"),
+            };
+   
 
-            contentLeftGrid.AddChild(tree);
+           contentLeftGrid2.AddChild(tree);
+           contentLeftGrid.AddChild(fileWatch);
         }
 
         private void CreateHeader()
@@ -92,12 +114,23 @@ namespace Striked3D.Nodes
             contentLeftGrid = new LayoutGrid
             {
                 Direction = UIPanelDirection.VERTICAL,
-                Size = new Types.StringVector("25%", "100%"),
+                Size = new Types.StringVector("15%", "100%"),
                 Position = new Types.StringVector("0px", "0px"),
-                BackgroundColor = RGBHelper.FromHex("#2b2e33")
+                BackgroundColor = RGBHelper.FromHex("#212428")
             };
 
             contentGrid.AddChild(contentLeftGrid);
+
+
+            contentLeftGrid2 = new LayoutGrid
+            {
+                Direction = UIPanelDirection.VERTICAL,
+                Size = new Types.StringVector("15%", "100%"),
+                Position = new Types.StringVector("0px", "0px"),
+                BackgroundColor = RGBHelper.FromHex("#2a2e33")
+            };
+
+            contentGrid.AddChild(contentLeftGrid2);
 
             contentCenterGrid = new LayoutGrid
             {
@@ -143,7 +176,7 @@ namespace Striked3D.Nodes
             contentRightGrid = new LayoutGrid
             {
                 Direction = UIPanelDirection.VERTICAL,
-                Size = new Types.StringVector("25%", "100%"),
+                Size = new Types.StringVector("20%", "100%"),
                 Position = new Types.StringVector("0px", "0px"),
                 BackgroundColor = RGBHelper.FromHex("#2b2e33")
             };

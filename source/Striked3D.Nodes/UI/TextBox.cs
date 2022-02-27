@@ -9,7 +9,7 @@ namespace Striked3D.Nodes
     {
         public const double simulateWaitKeyBackspaceTime = 0.1;
 
-        private float _FontSize = 13;
+        private float _FontSize = 14;
         private float _borderThickness = 1;
         private string _Content = "";
         private string _Key = "";
@@ -28,7 +28,7 @@ namespace Striked3D.Nodes
 
         private RgbaFloat _BorderColor = RGBHelper.FromHex("#303338");
 
-        private Font _Font = Font.SystemFont;
+        private Font _Font = Nodes.Editor.Theme.Font;
 
         private bool recreateCursor = false;
         private InputService inputService;

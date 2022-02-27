@@ -23,6 +23,7 @@ namespace Striked3D.Importer
         public Importer()
         {
             extensions.Add(".ttf", new FontImporter());
+            extensions.Add(".png", new BitmapTextureImporter());
         }
 
         public ImporterState ImportFile<T>(string inputPath, string outputPath, string fileName, bool reImport = false) where T : ISerializable
@@ -64,6 +65,49 @@ namespace Striked3D.Importer
             catch (Exception ex)
             {
                 Logger.Error(inputPath + " => " + ex.Message, ex.StackTrace);
+            }
+
+            return ImporterState.FAILED;
+        }
+
+        public ImporterState ImportFile<T>(byte[] array, string extension,  string outputPath, string fileName, bool reImport = false) where T : ISerializable
+        {
+            if (!extensions.ContainsKey(extension))
+            {
+                throw new Exception("Cant find extension " + extension + " in loader list");
+            }
+
+            ImportProcessor? loader = extensions[extension];
+            string? writePath = System.IO.Path.Combine(outputPath, fileName + loader.OutputExtension);
+
+            try
+            {
+                if (File.Exists(writePath))
+                {
+                    if (reImport)
+                    {
+                        System.IO.File.Delete(writePath);
+                    }
+                    else
+                    {
+                        return ImporterState.OK;
+                    }
+                }
+
+                Logger.Debug(this, "Start parse byte array to " + writePath);
+
+                T result = (T)loader.Import(array);
+                byte[]? byteArray = result.Serialize();
+
+                File.WriteAllBytes(writePath, byteArray);
+
+                Logger.Debug(this, "Write to " + writePath);
+                result = default;
+                return ImporterState.OK;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(writePath + " => " + ex.Message, ex.StackTrace);
             }
 
             return ImporterState.FAILED;

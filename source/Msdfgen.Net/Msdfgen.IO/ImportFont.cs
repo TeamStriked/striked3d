@@ -1,4 +1,5 @@
 using SharpFont;
+using Striked3D.Math;
 using System;
 using System.Collections.Generic;
 namespace Msdfgen.IO
@@ -19,6 +20,10 @@ namespace Msdfgen.IO
         {
             return library.NewFace(filename, 0);
         }
+        public static Face LoadFont(Library library, byte[] array)
+        {
+            return library.NewMemoryFace(array, 0);
+        }
 
         public static void DestroyFont(Face font)
         {
@@ -34,7 +39,6 @@ namespace Msdfgen.IO
         {
             return font.Size.Metrics.Ascender / 64.0;
         }
-
         public static double GetFontDecend(Face font)
         {
             return font.Size.Metrics.Descender / 64.0;
@@ -69,14 +73,21 @@ namespace Msdfgen.IO
 
             return chars;
         }
-        public static Shape LoadGlyph(Face font, uint unicode, ref double advance)
+        public static Shape LoadGlyph(Face font, uint unicode, ref float advance, ref Vector2D<float> bearing, ref Vector2D<float> size)
         {
             Shape result = new Shape();
+            font.SetPixelSizes(0, 32);
             font.LoadChar(unicode, LoadFlags.NoScale, LoadTarget.Normal);
+
             result.InverseYAxis = false;
-            advance = font.Glyph.Advance.X.Value / 64.0;
+            advance = font.Glyph.Metrics.HorizontalAdvance.ToSingle() ;
+
+            bearing = new Vector2D<float>(font.Glyph.Metrics.HorizontalBearingX.ToSingle(), font.Glyph.Metrics.HorizontalBearingY.ToSingle());
+            size = new Vector2D<float>(font.Glyph.Metrics.Width.ToSingle(), font.Glyph.Metrics.Height.ToSingle());
             FtContext context = new FtContext(result);
-            OutlineFuncs ftFunctions = new OutlineFuncs
+
+
+                OutlineFuncs ftFunctions = new OutlineFuncs
             {
                 MoveFunction = context.FtMoveTo,
                 LineFunction = context.FtLineTo,

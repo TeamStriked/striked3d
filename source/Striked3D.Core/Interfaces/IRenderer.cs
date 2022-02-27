@@ -30,6 +30,11 @@ namespace Striked3D.Graphics
         public ResourceLayout FontAtlasLayout { get; }
 
         /// <summary>
+        /// The default layout for font atlases
+        /// </summary>
+        public ResourceLayout MaterialBitmapTexture { get; }
+
+        /// <summary>
         /// A default index buffer (for rectangles, 6 indicies)
         /// </summary>
         public DeviceBuffer IndexDefaultBuffer { get; }

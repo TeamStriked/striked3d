@@ -37,6 +37,7 @@ namespace Striked3D.Graphics
         public ResourceLayout Material2DLayout => service.Material2DLayout;
         public ResourceLayout TransformLayout => service.TransformLayout;
         public ResourceLayout FontAtlasLayout => service.FontAtlasLayout;
+        public ResourceLayout MaterialBitmapTexture => service.MaterialBitmapTexture;
         public ResourceSet DefaultTextureSet => service.DefaultTextureSet;
         public IMaterial Default2DMaterial => service.Default2DMaterial;
         public IMaterial Default3DMaterial => service.Default3DMaterial;

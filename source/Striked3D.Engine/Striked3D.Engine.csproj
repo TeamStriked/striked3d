@@ -2,9 +2,26 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <StartupObject>Striked3D.Engine.Program</StartupObject>
   </PropertyGroup>
 
   <Import Project="..\common.props" />
+
+  <ItemGroup>
+    <None Remove="Resources\Fonts\OpenSans-Bold.ttf" />
+    <None Remove="Resources\Fonts\OpenSans-Regular.ttf" />
+    <None Remove="Resources\Images\folder.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Fonts\OpenSans-Bold.ttf" />
+    <EmbeddedResource Include="Resources\Fonts\OpenSans-Regular.ttf" />
+    <EmbeddedResource Include="Resources\Images\folder.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.9.0-preview1" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Striked3D.Core\Striked3D.Core.csproj" />

@@ -140,10 +140,10 @@ namespace Striked3D.Nodes
             {
                 Vector2D<float> cursorPos = (ev as MouseInputEvent).Position;
 
-                if (cursorPos.X >= ScreenPosition.X
-                    && cursorPos.X <= ScreenPostionEnd.X
-                    && cursorPos.Y >= ScreenPosition.Y
-                    && cursorPos.Y <= ScreenPostionEnd.Y)
+                if (cursorPos.X > ScreenPosition.X
+                    && cursorPos.X < ScreenPostionEnd.X
+                    && cursorPos.Y > ScreenPosition.Y
+                    && cursorPos.Y < ScreenPostionEnd.Y)
                 {
                     if (_isHover != true)
                     {

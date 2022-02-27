@@ -25,6 +25,28 @@ namespace Msdfgen
         }
 
     }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [BinarySerialization(SerializationMode.Explicit)]
+    public struct FloatRgba
+    {
+        [SerializableMember]
+        public float R;
+        [SerializableMember]
+        public float G;
+        [SerializableMember]
+        public float B;
+        [SerializableMember]
+        public float A;
+
+        public FloatRgba(float R, float G, float B, float A)
+        {
+            this.R = R;
+            this.G = G;
+            this.B = B;
+            this.A = A;
+        }
+
+    }
 
     [BinarySerialization(SerializationMode.Explicit)]
     public struct Bitmap<T> where T : struct

@@ -69,7 +69,7 @@ namespace Striked3D.Nodes
 
         public Dictionary<string, ListViewItem> GetItems()
         {
-            return items; ;
+            return items;
         }
     }
 }

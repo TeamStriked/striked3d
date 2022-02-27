@@ -1,9 +1,10 @@
-﻿using Striked3D.Resources;
+﻿using System;
+using Striked3D.Resources;
 using Veldrid;
 
-namespace Striked3D.Nodes
+namespace Striked3D.Nodes.UI
 {
-    public class ListViewItem : Control
+    public class EditorFileWatchItem : Control
     {
 
         private float _FontSize = 14;
@@ -16,6 +17,12 @@ namespace Striked3D.Nodes
         private RgbaFloat _ColorHover = new RgbaFloat(0, 1, 0, 1);
 
         private Font _Font = Nodes.Editor.Theme.Font;
+        private int _Level;
+        public int Level { get => _Level; set => _Level = value; }
+
+        private bool _isDictonary;
+        public bool IsDictonary { get => _isDictonary; set => _isDictonary = value; }
+
         public Font Font
         {
             get => _Font;
@@ -119,7 +126,7 @@ namespace Striked3D.Nodes
             set => SetProperty("Key", ref _Key, value);
         }
 
-        public ListViewItem() : base()
+        public EditorFileWatchItem() : base()
         {
             OnHover += () => { UpdateCanvas(); };
             OnHoverLeave += () => { UpdateCanvas(); };
@@ -134,18 +141,29 @@ namespace Striked3D.Nodes
                 DrawRect(bgColor, ScreenPosition, ScreenSize);
             }
 
+            DrawTextureRect(Editor.Theme.FolderIcon, ScreenPosition, new Math.Vector2D<float>(Editor.Theme.IconSize), Editor.Theme.IconModulator);
+
+            var textHeight = this.GetTextHeight(Font, Content, FontSize);
+
             RgbaFloat foregroundColor = isHover ? ColorHover : Color;
             if (foregroundColor.A > 0)
             {
-                DrawText(Font, foregroundColor, ScreenPosition, FontSize, Content);
+                var pos = ScreenPosition;
+
+                pos.X += Editor.Theme.IconSize;
+
+                 pos.Y += System.MathF.Round((Editor.Theme.IconSize / 2) - (textHeight / 2));
+
+                DrawText(Font, foregroundColor, pos, FontSize, Content);
             }
             else
             {
                 return;
             }
 
-            _screenSize.Y = this.GetTextHeight(Font, Content, FontSize);
+            _screenSize.Y = System.Math.Max(Editor.Theme.IconSize, textHeight);
         }
 
     }
 }
+

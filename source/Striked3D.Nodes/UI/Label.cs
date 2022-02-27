@@ -5,12 +5,12 @@ namespace Striked3D.Nodes
 {
     public class Label : Control
     {
-        private float _FontSize = 13;
+        private float _FontSize = 14;
         private Resources.FontAlign _FontAlign = Resources.FontAlign.Left;
         private string _Content = "";
 
         private RgbaFloat _Color = new RgbaFloat(1, 1, 1, 1);
-        private Font _Font = Font.SystemFont;
+        private Font _Font = Nodes.Editor.Theme.Font;
 
         public Font Font
         {

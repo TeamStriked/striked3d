@@ -3,6 +3,7 @@ using Msdfgen;
 using Striked3D.Core;
 using Striked3D.Core.Interfaces;
 using Striked3D.Graphics;
+using Striked3D.Math;
 using Striked3D.Types;
 using System;
 using System.Collections.Generic;
@@ -19,9 +20,11 @@ namespace Striked3D.Resources
     public struct FontGylph
     {
         public Bitmap<FloatRgb> bitmap { get; set; }
-        public double advance { get; set; }
+        public float advance { get; set; }
         public int Order { get; set; }
         public char Char { get; set; }
+        public Vector2D<float> bearing { get; set; }
+        public Vector2D<float> size { get; set; }
     }
 
 
@@ -60,8 +63,6 @@ namespace Striked3D.Resources
                 isDirty = true;
             }
         }
-
-        public static Font SystemFont;
 
         private bool isDirty = false;
 
@@ -140,7 +141,8 @@ namespace Striked3D.Resources
 
                 byte[] buffer = new byte[bitmap.Value.Width * bitmap.Value.Height * 4];
                 ulong buferId = 0;
-                for (int y = 0; y < bitmap.Value.Height; y++)
+             
+                 for (int y = 0; y < bitmap.Value.Height; y++)
                 {
                     for (int x = 0; x < bitmap.Value.Width; x++)
                     {

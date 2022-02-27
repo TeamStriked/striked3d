@@ -13,18 +13,26 @@ namespace Striked3D.Types
     public struct FontAtlasGylph
     {
         [SerializableMember]
-        public double advance { get; set; }
+        public float advance { get; set; }
 
         [SerializableMember]
         public Vector2D<float> region { get; set; }
 
         [SerializableMember]
+        public Vector2D<float> bearing { get; set; }
+
+        [SerializableMember]
+        public Vector2D<float> size { get; set; }
+
+        [SerializableMember]
         public int atlasId { get; set; }
 
-        public FontAtlasGylph(double advance, Vector2D<float> region, int atlasid)
+        public FontAtlasGylph(float advance, Vector2D<float> region, Vector2D<float> bearing, Vector2D<float> size, int atlasid)
         {
             this.advance = advance;
             this.region = region;
+            this.bearing = bearing;
+            this.size = size;
             this.atlasId = atlasid;
         }
     }

@@ -7,6 +7,10 @@
   <Import Project="..\common.props" />
 
   <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\thirtparty\veldrid\Veldrid\Veldrid.csproj" />
   </ItemGroup>
 </Project>

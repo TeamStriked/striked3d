@@ -40,12 +40,13 @@ namespace Veldrid.Vk
         private string _name;
 
         private readonly object _commandBufferListLock = new object();
+        private readonly object _commandSubPassLock = new object();
         private readonly Queue<Silk.NET.Vulkan.CommandBuffer> _availableCommandBuffers = new Queue<Silk.NET.Vulkan.CommandBuffer>();
         private readonly List<Silk.NET.Vulkan.CommandBuffer> _submittedCommandBuffers = new List<Silk.NET.Vulkan.CommandBuffer>();
 
         private StagingResourceInfo _currentStagingInfo;
         private readonly object _stagingLock = new object();
-        private readonly Dictionary<Silk.NET.Vulkan.CommandBuffer, StagingResourceInfo> _submittedStagingInfos = new Dictionary<Silk.NET.Vulkan.CommandBuffer, StagingResourceInfo>();
+        private readonly Dictionary<nint, StagingResourceInfo> _submittedStagingInfos = new Dictionary<nint, StagingResourceInfo>();
         private readonly List<StagingResourceInfo> _availableStagingInfos = new List<StagingResourceInfo>();
         private readonly List<VkBuffer> _availableStagingBuffers = new List<VkBuffer>();
 
@@ -102,26 +103,45 @@ namespace Veldrid.Vk
 
         public void CommandBufferSubmitted(Silk.NET.Vulkan.CommandBuffer cb)
         {
+            if (submitCommands != null)
+            {
+                foreach (VkCommandList pass in submitCommands)
+                {
+                    if(pass.CommandBuffer.Handle != default)
+                    {
+                        pass.CommandBufferSubmitted(pass.CommandBuffer);
+                    }
+                }
+            }
+
             RefCount.Increment();
             foreach (ResourceRefCount rrc in _currentStagingInfo.Resources)
             {
                 rrc.Increment();
             }
 
-            _submittedStagingInfos.Add(cb, _currentStagingInfo);
+            _submittedStagingInfos.Add(cb.Handle, _currentStagingInfo);
             _currentStagingInfo = null;
-
-            if (this.submitCommands != null)
-            {
-                foreach (var command in submitCommands)
-                {
-                    (command as VkCommandList).CommandBufferSubmitted((command as VkCommandList).CommandBuffer);
-                }
-            }
         }
 
         public void CommandBufferCompleted(Silk.NET.Vulkan.CommandBuffer completedCB)
         {
+           
+            if (submitCommands != null)
+            {
+                foreach (VkCommandList pass in submitCommands)
+                {
+                    lock (pass._commandBufferListLock)
+                    {
+                        for (int i = 0; i < pass._submittedCommandBuffers.Count; i++)
+                        {
+                            Silk.NET.Vulkan.CommandBuffer submittedCB = pass._submittedCommandBuffers[i];
+                            pass.CommandBufferCompleted(submittedCB);
+                        }
+                    }
+                }
+            }
+
             lock (_commandBufferListLock)
             {
                 for (int i = 0; i < _submittedCommandBuffers.Count; i++)
@@ -129,17 +149,9 @@ namespace Veldrid.Vk
                     Silk.NET.Vulkan.CommandBuffer submittedCB = _submittedCommandBuffers[i];
                     if (submittedCB.Handle == completedCB.Handle)
                     {
+                        //reset command buffer
                         _availableCommandBuffers.Enqueue(completedCB);
                         _submittedCommandBuffers.RemoveAt(i);
-
-                        if(submitCommands != null)
-                        {
-                            foreach(VkCommandList pass in submitCommands)
-                            {
-                                var getSubmittedBuffer = pass._submittedCommandBuffers[i];
-                                pass.CommandBufferCompleted(getSubmittedBuffer);
-                            }
-                        }
 
 
                         i -= 1;
@@ -149,10 +161,10 @@ namespace Veldrid.Vk
 
             lock (_stagingLock)
             {
-                if (_submittedStagingInfos.TryGetValue(completedCB, out StagingResourceInfo info))
+                if (_submittedStagingInfos.TryGetValue(completedCB.Handle, out StagingResourceInfo info))
                 {
                     RecycleStagingInfo(info);
-                    _submittedStagingInfos.Remove(completedCB);
+                    _submittedStagingInfos.Remove(completedCB.Handle);
                 }
             }
 

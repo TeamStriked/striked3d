@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Striked3D.Engine": {
+      "commandName": "Project",
+      "commandLineArgs": "-p C:\\project"
+    }
+  }
+}

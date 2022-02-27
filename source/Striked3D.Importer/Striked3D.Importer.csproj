@@ -24,6 +24,5 @@
 
   <ItemGroup>
     <Folder Include="Formatter\" />
-    <Folder Include="Loader\" />
   </ItemGroup>
 </Project>

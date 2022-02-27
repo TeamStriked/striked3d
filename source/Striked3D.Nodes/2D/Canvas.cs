@@ -1,6 +1,5 @@
 ﻿using Striked3D.Math;
 using Striked3D.Core;
-using Striked3D.Engine.Resources;
 using Striked3D.Graphics;
 using Striked3D.Importer;
 using Striked3D.Resources;
@@ -9,20 +8,24 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Veldrid;
+using System.Runtime.InteropServices;
+using Striked3D.Services.Graphics;
 
 namespace Striked3D.Nodes
 {
+
     internal struct CanvasItem
     {
         public Material2DInfo info { get; set; }
         public Font font;
         public int atlasId = -1;
+        public BitmapTexture Texture { get; set; }
     }
 
-    /// <summary>
-    /// A 2D Canvas Element
-    /// </summary>
-    public abstract class Canvas : Node2D, IDrawable2D
+/// <summary>
+/// A 2D Canvas Element
+/// </summary>
+public abstract class Canvas : Node2D, IDrawable2D
     {
         private readonly List<CanvasItem> matInfoArray = new List<CanvasItem>();
 
@@ -55,6 +58,17 @@ namespace Striked3D.Nodes
         {
             matInfoArray.Add(new CanvasItem { info = new Material2DInfo { IsFont = 0.0f, position = _position, size = _size, color = _color } });
         }
+
+        public void DrawTextureRect(BitmapTexture texture, Vector2D<float> _position, Vector2D<float> _size)
+        {
+            this.DrawTextureRect(texture, _position, _size, Vector4D<float>.One);
+        }
+
+        public void DrawTextureRect(BitmapTexture texture, Vector2D<float> _position, Vector2D<float> _size, Vector4D<float> _modulate )
+        {
+            matInfoArray.Add(new CanvasItem { info = new Material2DInfo { IsFont = 0.0f, position = _position, size = _size, UseTexture = 1.0f, Modulate = _modulate }, Texture = texture });
+        }
+
         public float GetTextWidth(Font font, float fontSize, string text)
         {
             if (font == null)
@@ -69,12 +83,60 @@ namespace Striked3D.Nodes
             foreach (char c in text)
             {
                 FontAtlasGylph cacheChar = font.GetChar(c);
-
                 width += (float)cacheChar.advance * scale;
             }
 
             return width;
         }
+
+        public float GetTextHeight(Font font, string text, float fontSize)
+        {
+            if (font == null)
+            {
+                return 0;
+            }
+
+            float scale = fontSize / FontImporter.renderSize;
+            float fontSizeScaled = FontImporter.renderSize * scale;
+            float highestValue = 0;
+            var highestCharValue = GetHighestChar(font, text, fontSize);
+            foreach (char c in text)
+            {
+                FontAtlasGylph cacheChar = font.GetChar(c);
+
+                var posY = highestCharValue;
+                var size = new Vector2D<float>(fontSizeScaled, fontSizeScaled);
+
+                posY -= cacheChar.bearing.Y * scale;
+                var fontSizeY = cacheChar.size.Y * scale;
+
+                var sizeY = cacheChar.size.Y * scale;
+
+                highestValue = MathF.Max(highestValue, sizeY + posY);
+            }
+
+            return highestValue;
+        }
+        public float GetHighestChar(Font font, string text, float fontSize)
+        {
+            if (font == null)
+            {
+                return 0;
+            }
+
+            float highestValue = 0;
+            float scale = fontSize / FontImporter.renderSize;
+
+            foreach (char c in text)
+            {
+                FontAtlasGylph cacheChar = font.GetChar(c);
+                var sizeY = cacheChar.bearing.Y * scale;
+                highestValue = MathF.Max(highestValue, sizeY);
+            }
+
+            return highestValue;
+        }
+
         public void DrawText(Font font, RgbaFloat _color, Vector2D<float> _position, float fontSize, string text)
         {
             if (font == null)
@@ -83,35 +145,48 @@ namespace Striked3D.Nodes
             }
 
             float xPos = _position.X;
-            float scale = (fontSize / FontImporter.renderSize);
-            float size = FontImporter.renderSize * scale;
+            float scale = fontSize / FontImporter.renderSize;
+            float fontSizeScaled = FontImporter.renderSize * scale;
 
+            var highestValue = GetHighestChar(font, text, fontSize);
             foreach (char c in text)
             {
                 FontAtlasGylph cacheChar = font.GetChar(c);
 
+                var pos = new Vector2D<float>(xPos, _position.Y + highestValue);
+                var size = new Vector2D<float>(fontSizeScaled, fontSizeScaled);
+       
+                pos.Y -= cacheChar.bearing.Y * scale;
+
+                var fontSizeX = cacheChar.size.X * scale;
+                var fontSizeY = cacheChar.size.Y * scale;
+
+                var sizeY = (cacheChar.size.Y * scale) + 0.5f;
+                var sizeX = (cacheChar.size.X * scale) + 0.5f;
+
                 float fromX = cacheChar.region.X;
                 float fromY = cacheChar.region.Y;
 
-                float toT = (cacheChar.region.X + FontImporter.renderSize);
-                float toY = (cacheChar.region.Y + FontImporter.renderSize);
+                float toT = (fromX + cacheChar.size.X) + 0.5f;
+                float toY = (fromY + cacheChar.size.Y) + 0.5f;
 
                 matInfoArray.Add(new CanvasItem
                 {
                     info = new Material2DInfo
                     {
                         IsFont = 1.0f,
-                        position = new Vector2D<float>(xPos, _position.Y),
-                        size = new Vector2D<float>(size, size),
+                        position = pos,
+                        size = new Vector2D<float>(sizeX, sizeY),
+                      //  size = size,
                         color = _color,
-                        FontRegion = new Vector4D<float>(fromX, fromY, toT, toY),
-                        FontRange = MathF.Max(1.0f, (size / FontImporter.renderSize) * FontImporter.renderRange)
+                        FontRegion = new Vector4D<float>(fromX, fromY , toT, toY ),
+                        FontRange = MathF.Max(1.0f, (fontSizeScaled / FontImporter.renderSize) * FontImporter.renderRange)
                     },
                     font = font,
                     atlasId = cacheChar.atlasId
-                });
+                });;
 
-                xPos += (float)cacheChar.advance * scale;
+                xPos += (float)( cacheChar.advance - (cacheChar.bearing.X )) * scale;
             }
         }
 
@@ -183,11 +258,6 @@ namespace Striked3D.Nodes
                 {
                     renderer.SetMaterial(mat);
                     renderer.SetViewport(Viewport);
-                    renderer.SetResourceSets(new ResourceSet[] {
-                            Viewport.World2D.ResourceSet,
-                            renderer.DefaultTextureSet
-                    });
-
                     renderer.BindBuffers(null, renderer.IndexDefaultBuffer);
 
                     foreach (CanvasItem item in matInfoArray)
@@ -200,7 +270,8 @@ namespace Striked3D.Nodes
                             {
                                 renderer.SetResourceSets(new ResourceSet[] {
                                         Viewport.World2D.ResourceSet,
-                                        atlas.fontAtlasSet
+                                        atlas.fontAtlasSet,
+                                        renderer.DefaultTextureSet
                                 });
                             }
 
@@ -209,7 +280,11 @@ namespace Striked3D.Nodes
                         {
                             renderer.SetResourceSets(new ResourceSet[] {
                                     Viewport.World2D.ResourceSet,
-                                    renderer.DefaultTextureSet
+                                    renderer.DefaultTextureSet,
+
+                                    (item.info.UseTexture > 0 && item.Texture != null && item.Texture.bitmapTextureSet != null)
+                                    ? item.Texture.bitmapTextureSet
+                                    : renderer.DefaultTextureSet
                             });
                         }
 
@@ -236,6 +311,11 @@ namespace Striked3D.Nodes
             foreach (Font? fontInUse in matInfoArray.Where(df => df.font != null).Select(df => df.font).Distinct())
             {
                 fontInUse.Bind(renderer);
+            }
+
+            foreach (BitmapTexture? texture in matInfoArray.Where(df => df.Texture != null).Select(df => df.Texture).Distinct())
+            {
+                texture.BeforeDraw(renderer);
             }
 
             if (needsToBeRecreate)

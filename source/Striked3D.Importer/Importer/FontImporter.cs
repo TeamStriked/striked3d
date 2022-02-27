@@ -18,6 +18,36 @@ namespace Striked3D.Importer
         public static float renderRange = 4;
         public override string OutputExtension => ".stf";
 
+        public override Font DoImport(byte[] array)
+        {
+            SharpFont.Library ft = ImportFont.InitializeFreetype();
+            SharpFont.Face fontFace = ImportFont.LoadFont(ft, array);
+
+            FontData data = new FontData(new Dictionary<int, Bitmap<FloatRgb>>(), new Dictionary<char, FontAtlasGylph>(), 0, 0);
+
+            data.ascend = ImportFont.GetFontAscend(fontFace);
+            data.decend = ImportFont.GetFontDecend(fontFace);
+
+            FontGylph[]? listOfChars = GetAllChars(fontFace);
+            int maxPossibleItems = (maxBitmapSize * maxBitmapSize) / (renderSize * renderSize);
+            List<List<FontGylph>>? groupedChars = listOfChars.ToList().ChunkBy(maxPossibleItems);
+
+            foreach (List<FontGylph> group in groupedChars)
+            {
+                data = GenerateAtlas(group, data);
+            }
+
+            groupedChars = null;
+
+            fontFace.Dispose();
+            ft.Dispose();
+
+            return new Font
+            {
+                FontData = data
+            };
+        }
+
         public override Font DoImport(string filePath)
         {
             if (string.IsNullOrEmpty(filePath))
@@ -25,10 +55,10 @@ namespace Striked3D.Importer
                 throw new Exception("Cant load font");
             }
 
-            FontData data = new FontData(new Dictionary<int, Bitmap<FloatRgb>>(), new Dictionary<char, FontAtlasGylph>(), 0, 0);
-
             SharpFont.Library ft = ImportFont.InitializeFreetype();
             SharpFont.Face fontFace = ImportFont.LoadFont(ft, filePath);
+
+            FontData data = new FontData(new Dictionary<int, Bitmap<FloatRgb>>(), new Dictionary<char, FontAtlasGylph>(), 0, 0);
 
             data.ascend = ImportFont.GetFontAscend(fontFace);
             data.decend = ImportFont.GetFontDecend(fontFace);
@@ -59,20 +89,24 @@ namespace Striked3D.Importer
             Generate.IMsdf generator = Generate.Msdf();
             foreach (char charCode in ImportFont.GetAllChars(fontFace))
             {
-                double advance = 0;
-                Shape shape = ImportFont.LoadGlyph(fontFace, charCode, ref advance);
+                float advance = 0;
+                Vector2D<float> bearing = Vector2D<float>.Zero;
+                Vector2D<float> size = Vector2D<float>.Zero;
+                Shape shape = ImportFont.LoadGlyph(fontFace, charCode, ref advance, ref bearing, ref size);
                 Bitmap<FloatRgb> msdf = new Bitmap<FloatRgb>(renderSize, renderSize);
 
                 generator.Output = msdf;
                 generator.Range = renderRange;
                 generator.Scale = new Vector2(1.0);
-                generator.Translate = new Vector2(0, 0);
+                var diff = (renderSize - bearing.Y);
+                generator.Translate = new Vector2(-bearing.X, diff);
+
                 shape.Normalize();
                 Coloring.EdgeColoringSimple(shape, 3.0);
                 generator.Shape = shape;
                 generator.Compute();
 
-                list.Add(new FontGylph { advance = advance, bitmap = msdf, Char = charCode });
+                list.Add(new FontGylph { advance = advance, bitmap = msdf, Char = charCode, bearing = bearing, size = size });
             }
 
             generator = null;
@@ -110,11 +144,12 @@ namespace Striked3D.Importer
                 {
                     for (int x = 0; x < gylph.bitmap.Width; x++)
                     {
-                        atlasBitmap[x + regionStartX, y + regionStartY] = gylph.bitmap[x, y];
+                        atlasBitmap[x + regionStartX, y + regionStartY] = gylph.bitmap[x, (gylph.bitmap.Height - 1) - y];
                     }
                 }
 
-                data.charIds.Add(gylph.Char, new FontAtlasGylph { region = new Vector2D<float>(regionStartX, regionStartY), advance = gylph.advance, atlasId = atlasSetId });
+                data.charIds.Add(gylph.Char, new FontAtlasGylph { region = new Vector2D<float>(regionStartX, regionStartY),
+                    bearing = gylph.bearing, size = gylph.size, advance = gylph.advance, atlasId = atlasSetId });
 
                 if ((currentColumn + 1) == maxPossibleColumns)
                 {

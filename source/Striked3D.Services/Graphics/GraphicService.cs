@@ -42,7 +42,8 @@ namespace Striked3D.Services
         public ResourceLayout Material2DLayout { get; set; }
         public ResourceLayout TransformLayout { get; set; }
         public ResourceLayout FontAtlasLayout { get; set; }
-
+        public ResourceLayout MaterialBitmapTexture { get; set; }
+        
         public Material2D Default2DMaterial { get; set; }
         public Material3D Default3DMaterial { get; set; }
 
@@ -384,6 +385,11 @@ namespace Striked3D.Services
                 new ResourceLayoutElementDescription("FontTextureSampler", ResourceKind.Sampler, ShaderStages.Fragment)
             ));
 
+            MaterialBitmapTexture = _graphicsDevice.ResourceFactory
+            .CreateResourceLayout(new ResourceLayoutDescription(
+                new ResourceLayoutElementDescription("BitmapTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
+                new ResourceLayoutElementDescription("BitmapTextureSampler", ResourceKind.Sampler, ShaderStages.Fragment)
+            ));
 
             TransformLayout = _graphicsDevice.ResourceFactory
                 .CreateResourceLayout(new ResourceLayoutDescription(

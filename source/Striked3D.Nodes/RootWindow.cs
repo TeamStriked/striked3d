@@ -29,26 +29,17 @@ namespace Striked3D.Core.Window
 
         public Viewport RootViewport { get; } = new Viewport();
 
+        public bool IsDebug { get; set; }
+
         public Veldrid.GraphicsDevice? CreateDevice()
         {
-
-#if (DEBUG)
-           var debugMode = true;
-#elif (RELEASE)
-            bool debugMode = false;
-#endif
-            if (debugMode)
-            {
-                Console.WriteLine("Debug Mode enabled");
-            }
-
             return _nativeWindow?.CreateGraphicsDevice(new()
             {
                 PreferStandardClipSpaceYDirection = true,
                 PreferDepthRangeZeroToOne = true,
                 SyncToVerticalBlank = VSync,
                 ResourceBindingModel = Veldrid.ResourceBindingModel.Improved,
-                Debug = debugMode,
+                Debug = IsDebug,
                 SwapchainDepthFormat = Veldrid.PixelFormat.R16_UNorm,
                 SwapchainSrgbFormat = true,
 
