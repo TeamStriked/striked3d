@@ -4,11 +4,30 @@ An easy 2 use and simple the extend 2D/3D Game Engine with Vulkan and DirectX12 
 
 ## Current Platform support
 
+The rendering backend is fully multi-threaded and thread safe.
+
 | Rendering 	| Windows 	| Linux 	| MacOS 	| Android 	| iOS 	|
 |-----------	|---------	|-------	|-------	|---------	|-----	|
 | Vulkan    	| X       	| X     	| X     	| X       	| X   	|
 | DirectX12 	| -       	| -     	| -     	| -       	| -   	|
 | Metal     	| -       	| -     	| -     	| -       	| -   	
+
+## Current available node types
+
+* Node (Base class for each node)
+* Viewports
+* Windows (Installs a new window with its own rendering thread)
+* CanvasItems (Contains 2D Rendering stuff like, create rectangles, draw text, etc.)
+* Mesh
+* Control (based on CanvasItems) and Control Elements like Buttons, etc.
+* Camera3D (Camera instance for an scene)
+* EditorGrid (Editor grid the preview window)
+
+## Current available node services
+
+* GraphicsService (Rendering Backend)
+* NodeTreeService (Node manager)
+* InputService (Input manager)
 
 ## Principle of simplicity and expandability
 
