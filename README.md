@@ -1,6 +1,6 @@
 # Striked3d
 
-A 3D Game Engine with Vulkan and DirectX12 Rendering Backend
+An easy 2 use and simple the extend 2D/3D Game Engine with Vulkan and DirectX12 Rendering Backend
 
 ## Current Platform support
 
