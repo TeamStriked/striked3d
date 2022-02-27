@@ -12,7 +12,7 @@ The rendering backend is fully multi-threaded and thread safe.
 | DirectX12 	| -       	| -     	| -     	| -       	| -   	|
 | Metal     	| -       	| -     	| -     	| -       	| -   	
 
-## Current available node types
+## Current available nodes
 
 * Node (Base class for each node)
 * Viewports
@@ -22,6 +22,8 @@ The rendering backend is fully multi-threaded and thread safe.
 * Control (based on CanvasItems) and Control Elements like Buttons, etc.
 * Camera3D (Camera instance for an scene)
 * EditorGrid (Editor grid the preview window)
+
+For 2d rendering we using an css-style positioning system (px or percent, relative or absolute).
 
 ## Current available node services
 
