@@ -53,3 +53,8 @@ We particularly rely on OOP.
 * [AssimpNet](https://bitbucket.org/Starnick/assimpnet/src/master/) (For 3d model parsing)
 * [BinaryPack](https://github.com/Sergio0694/BinaryPack) and [Json.NET](https://github.com/JamesNK/Newtonsoft.Json) (For serialization)
 * [ImageSharp](https://github.com/SixLabors/ImageSharp) (For image import)
+
+## :clap: Supporters
+
+[![Stargazers repo roster for @TeamStriked/striked-game-engine](https://reporoster.com/stars/TeamStriked/striked3d)](https://github.com/TeamStriked/striked3d)
+
