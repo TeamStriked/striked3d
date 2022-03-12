@@ -56,5 +56,5 @@ We particularly rely on OOP.
 
 ## :clap: Supporters
 
-[![Stargazers repo roster for @TeamStriked/striked-game-engine](https://reporoster.com/stars/TeamStriked/striked3d)](https://github.com/TeamStriked/striked3d)
+[![Stargazers repo roster for @TeamStriked/striked3d](https://reporoster.com/stars/TeamStriked/striked3d)](https://github.com/TeamStriked/striked3d)
 
